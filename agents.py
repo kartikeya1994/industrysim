@@ -1,20 +1,13 @@
 from tools import weibull, normal
 class MaintenanceTask:
-	def __init__(self, eta, beta, age, RF_low, RF_high, cost_low, cost_high, labor_low, labor_high, ttf_low, ttf_high, cost_cm, labor_cm, ttf_cm):
+	def __init__(self, eta, beta, age, fixed_cost, RF, labor, ttf):
 		self.eta = eta
 		self.beta = beta
 		self.age = age
-		self.RF_low=RF_low
-		self.RF_high = RF_high
-		self.cost_low = cost_low
-		self.cost_high = cost_high
-		self.labor_high = labor_high
-		self.labor_low labor_low
-		self.ttf_high = ttf_high #(mu,sigma)
-		self.ttf_low = ttf_low #(mu,sigma)
-		self.cost_cm = cost_cm
-		self.labor_cm = labor_cm
-		self.ttf_cm = ttf_cm #(mu,sigma)
+		self.fixed_cost = fixed_cost
+		self.RF = RF
+		self.labor = labor
+		self.ttf = ttf
 
 		self.init_totals()
 		self.init_next_epoch()
@@ -22,39 +15,63 @@ class MaintenanceTask:
 	def init_next_epoch(self):
 		#TODO: log variables of this epoch here
 
-		self.total_low_done += self.low_done
-		self.total_high_done += self.high_done
-		self.total_cm_done += self.cm_done
-		self.total_low_hours += self.low_hours
-		self.total_high_hours += self.high_hours
-		self.total_cm_hours += self.cm_hours
-		self.total_low_cost += self.low_cost
-		self.total_high_cost += self.high_cost
-		self.total_cm_cost += self.cm_cost
+		self.total_mt_jobs_done['low'] += self.mt_jobs_done['low']
+		self.total_mt_jobs_done['high'] += self.mt_jobs_done['high']
+		self.total_mt_jobs_done['cm'] += self.mt_jobs_done['cm']
+		self.total_mt_hours['high'] += self.mt_jobs_hours['high']
+		self.total_mt_hours['low'] += self.mt_jobs_hours['low']
+		self.total_mt_hours['cm'] += self.mt_jobs_hours['cm']
+		self.total_mt_cost['high'] += self.mt_jobs_cost['high']
+		self.total_mt_cost['low'] += self.mt_jobs_cost['low']
+		self.total_mt_cost['cm'] += self.mt_jobs_cost['cm']
 
-		self.low_done = 0
-		self.high_done = 0
-		self.cm_done = 0
-		self.low_hours = 0
-		self.high_hours = 0 
-		self.cm_hours = 0
-		self.low_cost = 0.0
-		self.high_cost = 0.0
-		self.cm_cost = 0.0
+		self.mt_jobs_done['low'] = 0
+		self.mt_jobs_done['high'] = 0
+		self.mt_jobs_done['cm'] = 0
+		self.mt_hours['high'] = 0
+		self.mt_hours['low'] = 0
+		self.mt_hours['cm'] = 0
+		self.mt_cost['high'] = 0.0
+		self.mt_cost['low'] = 0.0
+		self.mt_cost['cm'] = 0.0
 		self.pm_scheduled = False
 
 	def init_totals(self):
-		self.total_low_done = 0
-		self.total_high_done = 0
-		self.total_cm_done = 0
-		self.total_low_hours = 0
-		self.total_high_hours = 0 
-		self.total_cm_hours = 0
-		self.total_low_cost = 0.0
-		self.total_high_cost = 0.0
-		self.total_cm_cost = 0.0
+		self.total_mt_jobs_done['low'] = 0
+		self.total_mt_jobs_done['high'] = 0
+		self.total_mt_jobs_done['cm'] = 0
+		self.total_mt_hours['high'] = 0
+		self.total_mt_hours['low'] = 0
+		self.total_mt_hours['cm'] = 0
+		self.total_mt_cost['high'] = 0.0
+		self.total_mt_cost['low'] = 0.0
+		self.total_mt_cost['cm'] = 0.0
 
-	def get_cm():
+	def get_labor(job_subtype=None):
+		return self.labor[self.get_type_string(job_subtype)]
+
+	def update_mt_metrics(s):
+		self.mt_jobs_done[s] += 1
+		self.mt_jobs_cost[s] += self.unit_cost[s]
+		self.age *= (1-self.RF[s])
+
+	def get_type_string(self, job_subtype):
+		s = None
+		if job_subtype is None:
+			s = 'cm'
+		elif job_subtype == 'HIGH':
+			s = 'high'
+		elif job_subtype == 'LOW':
+			s = 'low'
+		else:
+			raise Exception('Incorrect job subtype')
+		return s
+
+	def mt_complete(self, job_subtype):
+		s = self.get_type_string(job_subtype)
+		self.update_mt_metrics(s)
+
+	def get_cm(self):
 		ttf = weibull(self.eta, self.beta, self.age)
 		# check if ttf lies in current epoch
 		if not self.pm_scheduled and ttf<self.epoch_length:
@@ -81,6 +98,9 @@ class Machine:
 
 		self.init_totals()
 		self.init_next_epoch()
+
+	def set_status(status):
+		self.status = status
 
 	def init_next_epoch(self):
 		# must be run at the end of each epoch
@@ -149,12 +169,24 @@ class Machine:
 		else:
 			raise Exception('Job type is incorrect')
 
+	def labor_req_met(self, curr_labor):
+		# check if labor req of front job is l.e.q curr_labor
+		req = self.labor_req()
+		for i in range(len(req)):
+			if req[i] > curr_labor[i]:
+				return False
+		return True
+
+	def labor_req(self):
+		return self.maintenance_task.get_labor(self.front_job_subtype())
+
 	def evaluate_breakdowns(self):
 		cm_job = self.get_cm()
 		if cm_job is not None:
 			# add CM job to schedule
 			self.job_queue.append(cm_job)
-
+	def front_job_subtype(self):
+		return self.job_queue.jobs[0].job_subtype
 	def front_job_type(self):
 		return self.job_queue.jobs[0].job_type
 	def front_start_time(self):
@@ -163,25 +195,25 @@ class Machine:
 		return self.job_queue.jobs[0].proc_time
 	def decrement_front_job(self):
 		if self.front_job_type()=='JOB':
+			# machine ages only if performing job
 			self.age += 1
+
 		self.job_queue.jobs[0].proc_time -= 1
+
+		#handle if job is complete in this time step
+		labor_release = None
 		if self.front_proc_time() == 0:
-			#job is done, remove it
 			if self.front_job_type()=='JOB':
 				self.jobs_done += 1
-			if self.front_job_type()=='PM':
-				# perform restoration of age
-				# increase metrics
-				#TODO
-			if self.front_job_type() == 'CM':
-				# perform restoration of age
-				# increase metrics
-				#TODO
-
+				# TODO: update production cost
+			elif self.front_job_type()=='PM' or self.front_job_type() == 'CM':
+				labor_release = self.labor_req()
+				self.maintenance_task.mt_complete(self.front_job_subtype())
 			#delete the completed job
 			self.job_queue.jobs.pop(0)
-
-
+			if len(self.job_queue)==0:
+				self.set_status('IDLE')
+		return labor_release
 
 class Job:
 	def __init__(self, job_type, proc_time, due_after=None, start_time=None, job_subtype=None):
