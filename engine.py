@@ -78,7 +78,9 @@ class Simulator:
 		perform_pm = self.policy.pm_plan.keys()
 		for m in self.machines:
 			if m.name in perform_pm:
-				end_of_last_pm = m.add_job(perform_pm[name], after=end_of_last_pm)
+				ret_val = m.add_job(perform_pm[name], after=end_of_last_pm)
+				if ret_val is not None:
+					end_of_last_pm = ret_val
 
 
 
