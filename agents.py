@@ -131,6 +131,7 @@ class Machine:
 		self.total_delay_cost = 0.0
 
 		self.curr_epoch = 0
+		self.waiting = False
 
 		self.maintenance_task.init_totals()
 
@@ -153,6 +154,33 @@ class Machine:
 		if cm_job is not None:
 			# add CM job to schedule
 			self.job_queue.append(cm_job)
+
+	def front_job_type(self):
+		return self.job_queue.jobs[0].job_type
+	def front_start_time(self):
+		return self.job_queue.jobs[0].start_time
+	def front_proc_time(self):
+		return self.job_queue.jobs[0].proc_time
+	def decrement_front_job(self):
+		if self.front_job_type()=='JOB':
+			self.age += 1
+		self.job_queue.jobs[0].proc_time -= 1
+		if self.front_proc_time() == 0:
+			#job is done, remove it
+			if self.front_job_type()=='JOB':
+				self.jobs_done += 1
+			if self.front_job_type()=='PM':
+				# perform restoration of age
+				# increase metrics
+				#TODO
+			if self.front_job_type() == 'CM':
+				# perform restoration of age
+				# increase metrics
+				#TODO
+
+			#delete the completed job
+			self.job_queue.jobs.pop(0)
+
 
 
 class Job:

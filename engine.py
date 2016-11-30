@@ -2,11 +2,12 @@ from tools import log
 import operator
 import heapq
 class Simulator:
-	def __init__(self, machines, policy, epoch_length, max_epochs):
+	def __init__(self, machines, policy, epoch_length, max_epochs, max_labor):
 		self.machines = machines
 		self.policy = policy
 		self.epoch_length = epoch_length
 		self.max_epochs = max_epochs
+		self.max_labor = max_labor
 		
 		self.init_variables()
 
@@ -14,6 +15,7 @@ class Simulator:
 		self.pending_jobs = []
 		self.time = 0
 		self.epoch = 0
+		self.curr_labor = self.max_labor
 
 		for m in self.machines:
 			m.total_reset()
@@ -37,7 +39,42 @@ class Simulator:
 		if policy is not None:
 			self.policy = policy
 
-		self.plan_epoch()
+		self.plan_epoch() #create job scheduling for each machine, incorporate PM, and evaluate breakdowns (CMs)
+
+		for time in range(self.epoch_length):
+			# check for events at each machine at this time instance
+			for m in self.machines:
+				if len(m.job_queue) == 0 or m.front_start_time() > time:
+					# no more jobs, or job starts later
+					m.state = 'IDLE'
+				elif m.front_start_time() < time: # job has already been started
+					if m.job_queue.jobs[0].job_type == 'JOB':
+						m.decrement_front_job()
+					if m.front_job_type() == 'PM' or m.front_job_type() == 'CM':
+						if m.waiting:
+							#check if labor is available
+							if m.labor_req_front() satisfies self.curr_labor: #TODO
+								m.state = m.front_job_type()
+								m.decrement_front_job()
+						else:
+							# decrement remaining job time
+							m.decrement_front_job()
+					if m.front_job_proc_time() == 0:
+						#job is finished
+						m.front_job_done() # TODO
+				elif m.front_start_time() == time:
+					if m.front_job_type() == 'JOB':
+						m.state = 'JOB'
+						m.decrement_front_job()
+					if m.front_job_type() == 'PM'  or m.front_job_type() == 'CM':
+						if m.labor_req_front() satisfies self.curr_labor: #TODO
+							m.state = m.front_job_type()
+							m.decrement_front_job()
+						else:
+							#wait
+							m.state = 'WAIT'
+				else:
+					raise Exception('No if-elif block satisfied')
 
 	def plan_epoch(self):
 		# schedule jobs and PM onto machines for one epoch
@@ -81,6 +118,7 @@ class Simulator:
 				ret_val = m.add_job(perform_pm[name], after=end_of_last_pm)
 				if ret_val is not None:
 					end_of_last_pm = ret_val
+					m.maintenance_task.pm_scheduled = True
 
 
 
