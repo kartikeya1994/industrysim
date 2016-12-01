@@ -64,7 +64,7 @@ class MaintenanceTask:
 		elif job_subtype == 'LOW':
 			s = 'low'
 		else:
-			raise Exception('Incorrect job subtype')
+			raise Exception('Incorrect job subtype while getting maintenance costs')
 		return s
 
 	def mt_complete(self, job_subtype):
@@ -104,23 +104,7 @@ class Machine:
 
 	def init_next_epoch(self):
 		# must be run at the end of each epoch
-		#store unfinished jobs as they must be rescheduled
-		self.old_job_queue = JobQueue()
-		self.unfinished_maintenance_job = None
-		first = True
-		for j in self.job_queue.jobs:
-			if first and (j.job_type == 'PM' or j.job_type =='CM'):
-				self.unfinished_maintenance_job = j
-			elif j.type == 'JOB':
-				self.old_job_queue.append(j)
-			first = False
-
-		self.job_queue = JobQueue()
-		if self.unfinished_maintenance_job is not None:
-			self.job_queue.append(unfinished_maintenance_job)
-
-		self.status = 'IDLE'
-
+		
 		#TODO: log variables of this epoch here
 
 		self.total_waiting_time += self.waiting_time
@@ -152,6 +136,7 @@ class Machine:
 
 		self.curr_epoch = 0
 		self.waiting = False
+		self.status = 'IDLE'
 
 		self.maintenance_task.init_totals()
 
@@ -214,6 +199,27 @@ class Machine:
 			if len(self.job_queue)==0:
 				self.set_status('IDLE')
 		return labor_release
+	def adjust_start_times(self, wait_release):
+		prev_end_time = wait_release
+		for i in range(len(self.job_queue.jobs)):
+			self.job_queue.jobs[i].start_time = prev_end_time
+			prev_end_time += self.job_queue.jobs[i].proc_time
+	def get_leftover_jobs(self):
+		leftover = []
+		#store unfinished jobs as they must be rescheduled
+		unfinished_maintenance_job = None
+		first = True
+		for j in self.job_queue.jobs:
+			if first and (j.job_type == 'PM' or j.job_type =='CM'):
+				self.unfinished_maintenance_job = j
+			elif j.type == 'JOB':
+				leftover.append(j)
+			first = False
+		self.job_queue = JobQueue()
+		if unfinished_maintenance_job is not None:
+			self.job_queue.append(unfinished_maintenance_job)
+		return leftover
+
 
 class Job:
 	def __init__(self, job_type, proc_time, due_after=None, start_time=None, job_subtype=None):
@@ -304,6 +310,7 @@ class JobQueue:
 							self.jobs[i].proc_time -= split1.proc_time
 							self.jobs.insert(i,split1)
 							self.jobs.insert(i+1, j)
+							self.length += j.proc_time
 							# i+2 is now the second split
 						#recompute start times
 						prev_end_time = self.jobs[i+2].start_time + self.jobs[i+2].proc_time
@@ -321,3 +328,6 @@ class Policy:
 		self.pm_plan = pm_plan
 		# dict with key as machine name on which to perform PM on
 		# and value HIGH', or 'LOW' indicating the type of PM
+
+class EpochResult:
+	self.costs

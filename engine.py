@@ -1,36 +1,39 @@
-from tools import log
+from tools import log, normal
 import operator
 import heapq
-class Simulator:
-	def __init__(self, machines, policy, epoch_length, max_epochs, max_labor):
+class IndustrySim:
+	def __init__(self, machines, policy, epoch_length, max_epochs, max_labor, job_demand):
 		self.machines = machines
 		self.policy = policy
 		self.epoch_length = epoch_length
 		self.max_epochs = max_epochs
 		self.max_labor = max_labor
+		self.job_demand = job_demand
 		
+		self.reset()
 		self.init_variables()
 
-	def init_variables(self):
+	def reset(self):
 		self.pending_jobs = []
 		self.time = 0
 		self.epoch = 0
 		self.curr_labor = self.max_labor
 
 		for m in self.machines:
-			m.total_reset()
+			m.init_totals()
+			m.init_next_epoch()
 
-	def reset(self, machines=None, policy=None, epoch_length=None, max_epochs=None):
-		log('Reset')
-		if machines is not None:
-			self.machines = machines
-		if policy is not None:
-			self.policy = policy
-		if epoch_length is not None:
-			self.epoch_length = epoch_length
-		if max_epochs is not None:
-			self.max_epochs = max_epochs
-		self.init_variables()
+	def init_next_epoch(self):
+		self.time = 0
+		self.epoch += 1
+		for m in self.machines:
+			m.init_next_epoch()
+
+	def get_new_jobs(self):
+		new_jobs = []
+		for i in range(self.job_demand['num']):
+			j = Job('JOB', normal(self.job_demand['mu'],self.job_demand['sigma']), due_after=normal(self.job_demand['due_after']['mu'],self.job_demand['due_after']['sigma']), job_subtype='A')
+			new_jobs.append(j)
 
 	def release_labor(self, labor):
 		for i in range(len(self.curr_labor)):
@@ -40,13 +43,14 @@ class Simulator:
 		if machine.labor_req_met(self.curr_labor): #requirement met, begin maintenance
 			# reserve labor of front job of machine
 			machine.set_status(machine.front_job_type())
-			#handle release of wait TODO
+			machine.adjust_start_times(self.time)
 			machine.waiting = False
 			req = machine.labor_req()
 			for i in range(len(self.curr_labor)):
 				self.curr_labor[i] -= req[i]
+			self.decrement_front_job(machine)
 		else:
-			# handle waiting in this time step TODO
+			machine.waiting = True
 
 	def run_epoch(self, policy=None):
 		#input: policy to run epoch by
@@ -59,11 +63,12 @@ class Simulator:
 		self.simulate_epoch()
 
 		# TODO: log metrics, return appropriate state object
+		self.init_next_epoch()
 		
 
 	def plan_epoch(self):
 		# schedule jobs and PM onto machines for one epoch
-		new_jobs = self.get_new_jobs() #TODO: get jobs required to produce this epoch
+		new_jobs = self.get_new_jobs() #TODO: job subtypes
 
 		#add pending jobs from previous epoch
 		for m in self.machines:
@@ -89,7 +94,7 @@ class Simulator:
 
 			m.add_job(j)
 
-			# readd popped machines to machine list
+			# re-add popped machines to machine list
 			heapq.heappush(self.machines,m)
 			while popped_machines:
 				m = popped_machines.pop()
@@ -106,7 +111,7 @@ class Simulator:
 					m.maintenance_task.pm_scheduled = True
 
 	def simulate_epoch(self):
-		for time in range(self.epoch_length):
+		while self.time < self.epoch_length:
 			# check for events at each machine at this time instance
 			for m in self.machines:
 				if len(m.job_queue) == 0 or m.front_start_time() > time:
@@ -118,24 +123,28 @@ class Simulator:
 					if (m.front_job_type() == 'PM' or m.front_job_type() == 'CM') and m.waiting:
 						# front job is PM or CM, and machine is waiting for labor to become available
 						m.attempt_maintenance()
-					if not m.waiting:
+					else:
 						# front job is running
 						# decrement remaining job time
-						result = m.decrement_front_job()
-						if result is not None:
-							#result is not None if maintenance job is finished
-							#result contains labor req of job that is done
-							self.release_labor(result)
+						self.decrement_front_job(m)
 
 				elif m.front_start_time() == time:
 					# begin front job
 					if m.front_job_type() == 'JOB':
 						m.set_status('JOB')
-						m.decrement_front_job()
+						self.decrement_front_job(m)
 					elif m.front_job_type() == 'PM'  or m.front_job_type() == 'CM':
 						m.attempt_maintenance()
 				else:
 					raise Exception('No if-elif block satisfied while evaluating front job')
+			self.time += 1
+
+	def decrement_front_job(self, machine):
+		result = machine.decrement_front_job()
+		if result is not None:
+			#result is not None if maintenance job is finished
+			#result contains labor req of job that is done
+			self.release_labor(result)
 
 
 
