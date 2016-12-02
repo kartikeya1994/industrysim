@@ -3,7 +3,6 @@ def weibull(eta, beta, age):
 	import math
 	b = age**beta
 	a = (1/eta)**beta
-	#return b-Math.log(1-Math.random())/a, (1/p)-t0;
 	return int((b-math.log(1.0-random())/a)**(1.0/beta)-age)
 
 def normal(mu=None, sigma=None, params=None):

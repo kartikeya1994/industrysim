@@ -1,6 +1,8 @@
 from entities import Policy, Machine, MaintenanceTask
 from engine import IndustrySim
 import time
+
+#define simulation parameters for 1 machine case
 epoch_length = 168
 max_epochs=100
 max_labor=[1,2,3]
@@ -63,10 +65,8 @@ policy = Policy('SJF', pm_plan)
 env = IndustrySim(machines=[machine], epoch_length=epoch_length, max_labor=max_labor,
 					wages=wages, job_demand=job_demand, delay_penalty=delay_penalty)
 
-start = time.time()
+#begin simulation
 for i in range(max_epochs):
 	epoch_result = env.run_epoch(policy=policy)
-	#print(str(epoch_result))
-	epoch_result = env.run_epoch(policy=Policy('EDF',{}))
-	#print(str(epoch_result))
-print('Took '+str(time.time()-start)+'s')
+	print(str(epoch_result))
+	print('')

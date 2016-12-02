@@ -60,7 +60,7 @@ class IndustrySim:
 			self.decrement_front_job(machine)
 		else:
 			machine.set_status('WAITING')
-			machine.time_spent['wait'] += 1
+			machine.time_spent['waiting'] += 1
 
 	def run_epoch(self, policy=None):
 		#input: policy to run epoch by
@@ -108,6 +108,7 @@ class IndustrySim:
 			# re-add popped machines to machine list
 			heapq.heappush(self.machines,m)
 			while popped_machines:
+
 				m = popped_machines.pop()
 				heapq.heappush(self.machines, m)
 
@@ -119,9 +120,10 @@ class IndustrySim:
 				if end_of_last_pm < self.epoch_length:
 					end_of_last_pm = m.add_job(self.policy.pm_plan[m.name], after=end_of_last_pm)
 					m.maintenance_task.pm_scheduled = True
+			m.evaluate_breakdowns()
 
 		for m in self.machines:
-			log(str(m.job_queue))
+			log('Age: '+str(m.maintenance_task.age)+', Schedule: '+str(m.job_queue))
 
 	def simulate_epoch(self):
 		while self.time < self.epoch_length:

@@ -78,13 +78,13 @@ class MaintenanceTask:
 		self.mt_cost[s] += self.fixed_cost[s]
 		self.age *= (1-self.RF[s])
 
-	def get_cm(self):
+	def get_cm(self, epoch_length):
 		ttf = weibull(self.eta, self.beta, self.age)
 		# check if ttf lies in current epoch
-		if not self.pm_scheduled and ttf<self.epoch_length:
+		if not self.pm_scheduled and ttf<epoch_length:
 			# not pm_scheduled is hacky, but a good enough approximation for now instead of recalculating TTFs after every PM.
 			# there will be breakdown in this epoch
-			return Job('CM', normal(ttf['cm']['mu'],ttf['cm']['sigma']), start_time=ttf)
+			return Job('CM', normal(params=self.ttr['cm']), start_time=ttf)
 		else:
 			return None
 
@@ -178,7 +178,7 @@ class Machine:
 		return self.maintenance_task.get_labor(self.front_job_subtype())
 
 	def evaluate_breakdowns(self):
-		cm_job = self.get_cm()
+		cm_job = self.maintenance_task.get_cm(self.epoch_length)
 		if cm_job is not None:
 			# add CM job to schedule
 			self.job_queue.append(cm_job)
@@ -233,7 +233,7 @@ class Machine:
 		for j in self.job_queue.jobs:
 			if first and (j.job_type == 'PM' or j.job_type =='CM'):
 				self.unfinished_maintenance_job = j
-			elif j.type == 'JOB':
+			elif j.job_type == 'JOB':
 				j.due_after -= self.epoch_length # since next epoch starts from zero
 				leftover.append(j)
 			first = False
