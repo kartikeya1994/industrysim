@@ -1,4 +1,4 @@
-from tools import weibull, normal
+from tools import weibull, normal, log
 from terminaltables import AsciiTable
 class MaintenanceTask:
 	def __init__(self, eta=None, beta=None, age=None, fixed_cost=None,
@@ -6,6 +6,7 @@ class MaintenanceTask:
 		self.eta = eta
 		self.beta = beta
 		self.age = age
+		self.orig_age = age
 		self.fixed_cost = fixed_cost
 		self.RF = RF
 		self.labor_req = labor_req
@@ -44,6 +45,7 @@ class MaintenanceTask:
 		self.mt_cost['cm'] = 0.0
 
 	def init_totals(self):
+		self.age = self.orig_age
 		self.total_mt_jobs_done = {}
 		self.total_mt_jobs_done['low'] = 0
 		self.total_mt_jobs_done['high'] = 0
@@ -56,6 +58,9 @@ class MaintenanceTask:
 		self.total_mt_cost['low'] = 0.0
 		self.total_mt_cost['cm'] = 0.0
 		self.pm_scheduled = False
+
+	def get_totals(self):
+		return self.age, self.mt_jobs_done, self.total_mt_cost
 
 	def get_labor(self, job_subtype=None):
 		return self.labor_req[self.get_type_string(job_subtype)]
@@ -124,8 +129,7 @@ class Machine:
 
 		age, mt_cost, mt_jobs_done = self.maintenance_task.init_next_epoch()
 
-		#name, mt_cost, delay_cost, jobs_done, mt_jobs_done
-		epoch_result = MachineResult(self.name, age, self.time_spent, mt_cost, self. delay_cost, self.jobs_done, mt_jobs_done)
+		epoch_result = MachineResult(self.name, age, self.time_spent, mt_cost, self.delay_cost, self.jobs_done, mt_jobs_done)
 		self.init_vars()
 		self.curr_epoch += 1
 		return epoch_result
@@ -153,6 +157,11 @@ class Machine:
 		self.status = 'IDLE'
 
 		self.maintenance_task.init_totals()
+
+	def get_totals(self):
+		age, total_mt_jobs_done, total_mt_cost = self.maintenance_task.get_totals()
+		machine_result = MachineResult(self.name, age, self.total_time_spent, total_mt_cost, self.total_delay_cost, self.total_jobs_done, total_mt_jobs_done)
+		return machine_result
 	
 	def add_job(self, j, after=0):
 		if isinstance(j, Job):
@@ -212,6 +221,7 @@ class Machine:
 				if self.job_queue[0].due_after < curr_time:
 					self.delay_cost += (curr_time-self.job_queue[0].due_after)*delay_penalty
 			elif self.front_job_type()=='PM' or self.front_job_type() == 'CM':
+				log(self.front_job_type()+' complete')
 				self.maintenance_task.pm_scheduled = False
 				labor_release = self.labor_req()
 				self.maintenance_task.mt_complete(self.front_job_subtype())
@@ -232,7 +242,9 @@ class Machine:
 		first = True
 		for j in self.job_queue.jobs:
 			if first and (j.job_type == 'PM' or j.job_type =='CM'):
-				self.unfinished_maintenance_job = j
+				log('Leftover job: '+j.job_type)
+				j.start_time = 0
+				unfinished_maintenance_job = j
 			elif j.job_type == 'JOB':
 				j.due_after -= self.epoch_length # since next epoch starts from zero
 				leftover.append(j)
@@ -326,40 +338,54 @@ class JobQueue:
 				return j.start_time+j.proc_time
 
 		elif j.job_type == 'CM':
-			if self.length == 0:
-				# CM is first and only job
-				self.jobs.append(j)
-			else:
-				if j.start_time == 0:
-					# Add CM job at the beginning
-					self.jobs.insert(0,j)
-				elif j.start_time > self.length:
-					# Add CM job at the end
+			if self.length==0 or self.jobs[0].job_type != 'CM':
+				log(str(self.length)+' CM time: '+ str(j.start_time))
+				if self.length == 0:
+					# CM is first and only job
 					self.jobs.append(j)
+					self.length += j.proc_time
 				else:
-					# find position to insert CM job at
-					for i in range(len(self.jobs)):
-						recalc_start_times = False
-						start = self.jobs[i].start_time
-						end = self.jobs[i].start_time + self.jobs[i].proc_time
-						if start == j.start_time:
-							self.jobs.insert(i,j)
-						if start < j.start_time and j.start_time < end:
-							# split this job into two at j.start_time
-							#job_type, proc_time, due_after=None, start_time=None, job_subtype=None
-							split1 = Job('JOB', j.start_time-start, due_after=self.jobs[i].due_after, start_time=start, job_subtype=self.jobs[i].job_subtype)
-							self.jobs[i].start_time = j.start_time+j.proc_time
-							self.jobs[i].proc_time -= split1.proc_time
-							self.jobs.insert(i,split1)
-							self.jobs.insert(i+1, j)
-							self.length += j.proc_time
-							# i+2 is now the second split
-						#recompute start times
-						prev_end_time = self.jobs[i+2].start_time + self.jobs[i+2].proc_time
-						for k in range(i+3,len(self.jobs)):
-							self.jobs[i+3].start_time = prev_end_time
-							prev_end_time = self.jobs[i+3].start_time + self.jobs[i+3].proc_time
-						break
+					recalc_start_times = False
+					if j.start_time == 0:
+						# Add CM job at the beginning
+						self.jobs.insert(0,j)
+						self.length += j.proc_time
+						prev_end_time = self.jobs[0].start_time + self.jobs[0].proc_time
+						for k in range(1,len(self.jobs)):
+							self.jobs[k].start_time = prev_end_time
+							prev_end_time = self.jobs[k].start_time + self.jobs[k].proc_time
+					elif j.start_time >= self.length:
+						# Add CM job at the end
+						self.jobs.append(j)
+						self.length += j.proc_time
+					else:
+						# find position to insert CM job at
+						for i in range(len(self.jobs)):
+							start = self.jobs[i].start_time
+							end = self.jobs[i].start_time + self.jobs[i].proc_time
+							if start == j.start_time:
+								self.jobs.insert(i,j)
+								prev_end_time = self.jobs[i].start_time + self.jobs[i].proc_time
+								for k in range(i+1,len(self.jobs)):
+									self.jobs[k].start_time = prev_end_time
+									prev_end_time = self.jobs[k].start_time + self.jobs[k].proc_time
+								break
+							elif start < j.start_time and j.start_time < end:
+								# split this job into two at j.start_time
+								#job_type, proc_time, due_after=None, start_time=None, job_subtype=None
+								split1 = Job('JOB', j.start_time-start, due_after=self.jobs[i].due_after, start_time=start, job_subtype=self.jobs[i].job_subtype)
+								self.jobs[i].start_time = j.start_time+j.proc_time
+								self.jobs[i].proc_time -= split1.proc_time
+								self.jobs.insert(i,split1)
+								self.jobs.insert(i+1, j)
+								self.length += j.proc_time
+								# i+2 is now the second split
+								#recompute start times
+								prev_end_time = self.jobs[i+2].start_time + self.jobs[i+2].proc_time
+								for k in range(i+3,len(self.jobs)):
+									self.jobs[k].start_time = prev_end_time
+									prev_end_time = self.jobs[k].start_time + self.jobs[k].proc_time
+								break
 
 class Policy:
 	def __init__(self, job_sched, pm_plan):

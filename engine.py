@@ -38,11 +38,25 @@ class IndustrySim:
 			labor_cost += self.wages[i]*self.max_labor[i]
 		return EpochResult(self.epoch, machine_results, labor_cost)
 
+	def get_result(self):
+		machine_results = []
+		for m in self.machines:
+			result = m.get_totals()
+			machine_results.append(result)
+		labor_cost = 0
+		for i in range(len(self.wages)):
+			labor_cost += self.wages[i]*self.max_labor[i]
+		return EpochResult(self.epoch, machine_results, labor_cost)
+
 	def get_new_jobs(self):
 		new_jobs = []
+		total_length = 0
 		for i in range(self.job_demand['num']):
 			j = Job('JOB', normal(self.job_demand['mu'],self.job_demand['sigma']), due_after=normal(self.job_demand['due_after']['mu'],self.job_demand['due_after']['sigma']), job_subtype='A')
 			new_jobs.append(j)
+			total_length += j.proc_time
+			if total_length > len(self.machines)*self.epoch_length:
+				break
 		return new_jobs
 
 	def release_labor(self, labor):
@@ -143,6 +157,8 @@ class IndustrySim:
 				else:
 					raise Exception('No if-elif block satisfied while evaluating front job')
 			self.time += 1
+		for m in self.machines:
+			log('Afer epoch: Age: '+str(m.maintenance_task.age)+', Schedule: '+str(m.job_queue))
 
 	def decrement_front_job(self, machine):
 		result = machine.decrement_front_job(self.time, self.delay_penalty)

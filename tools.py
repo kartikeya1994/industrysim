@@ -13,3 +13,5 @@ def normal(mu=None, sigma=None, params=None):
 
 def log(msg):
 	print(msg)
+	pass
+	
