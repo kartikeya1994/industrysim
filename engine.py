@@ -3,16 +3,20 @@ import operator
 import heapq
 from entities import EpochResult, Job
 import numpy as np
+import sys
 class IndustrySim:
 	def __init__(self, machines, epoch_length, max_labor,
-					wages, job_demand, delay_penalty, state_size):
+					wages, job_demand, delay_penalty, state_size=None):
 		self.machines = machines
 		self.epoch_length = epoch_length
 		self.max_labor = max_labor
 		self.wages = wages
 		self.job_demand = job_demand
 		self.delay_penalty = delay_penalty
-		self.state_size = state_size
+		if state_size is None:
+			self.state_size = len(self.machines)*2+4
+		else:
+			self.state_size = state_size
 
 		self.epoch = 0
 		self.curr_labor = list(self.max_labor)
@@ -26,6 +30,8 @@ class IndustrySim:
 		self.curr_labor = list(self.max_labor)
 		self.new_jobs = []
 		self.pending_jobs = []
+
+		self.eval_next_epoch_job_demand()
 
 		for m in self.machines:
 			m.init_totals()
@@ -99,6 +105,7 @@ class IndustrySim:
 		#attempt to start maintenance
 		if machine.labor_req_met(self.curr_labor): #requirement met, begin maintenance
 			# reserve labor of front job of machine
+			log('Starting maintenance: '+machine.front_job_type())
 			machine.adjust_start_times(self.time)
 			req = machine.labor_req()
 			for i in range(len(self.curr_labor)):
@@ -115,7 +122,6 @@ class IndustrySim:
 			self.policy = policy
 
 		log('Epoch: '+str(self.epoch))
-
 		self.plan_epoch() #create job scheduling for each machine, incorporate PM, and evaluate breakdowns (CMs)
 
 		self.simulate_epoch()
@@ -166,6 +172,7 @@ class IndustrySim:
 
 		for m in self.machines:
 			log('Age: '+str(m.maintenance_task.age)+', Schedule: '+str(m.job_queue))
+			log('Labour: '+str(self.curr_labor)+' PM sched: '+str(m.maintenance_task.pm_scheduled))
 
 	def simulate_epoch(self):
 		while self.time < self.epoch_length:
@@ -187,7 +194,7 @@ class IndustrySim:
 			self.time += 1
 		for m in self.machines:
 			log('Afer epoch: Age: '+str(m.maintenance_task.age)+', Schedule: '+str(m.job_queue))
-
+			log('Labour: '+str(self.curr_labor)+' PM sched: '+str(m.maintenance_task.pm_scheduled))
 	def decrement_front_job(self, machine):
 		result = machine.decrement_front_job(self.time, self.delay_penalty)
 		if result is not None:

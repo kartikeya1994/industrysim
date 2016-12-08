@@ -1,10 +1,11 @@
-from entities import Policy, Machine, MaintenanceTask
+from entities import Policy, Machine, MaintenanceTask, EpochResult, PeriodicPolicy
 from engine import IndustrySim
+from tools import e_greedy, NN
+import numpy as np
 import time
 
-#define simulation parameters for 1 machine case
 epoch_length = 168
-max_epochs=100
+max_epochs=25
 max_labor=[1,2,3]
 wages = [2500, 1000, 500] # per epoch
 num_machines = 1
@@ -17,7 +18,7 @@ job_demand = {
 		'sigma':100.0
 	}
 }
-delay_penalty = 10
+delay_penalty = 5
 mt_fixed_cost = {
 	'cm':1000,
 	'high':400,
@@ -34,7 +35,7 @@ mt_ttr = {
 		'sigma':5
 		},
 	'high': {
-		'mu':30,
+		'mu':70,
 		'sigma':5
 		},
 	'low':{
@@ -48,25 +49,41 @@ mt_labor = {
 	'low':[0,1,1]
 }
 
-eta = 1000.0
+eta = 500.0
 beta = 2.0
 age = 0.0
 
 name = 'FnC1'
 compatible_jobs = {'A', 'B'}
-pm_plan={'FnC1':'HIGH'}
+pm_plan={'FnC1':'LOW', 'Lathe':'HIGH'}
+pm_plan2 = {}
+machine_names = ['FnC1']
 
-mt_task = MaintenanceTask(eta=eta, beta=beta, age=age, fixed_cost=mt_fixed_cost, 
+mt_task1 = MaintenanceTask(eta=eta, beta=beta, age=age, fixed_cost=mt_fixed_cost, 
 							RF=mt_RF, labor_req=mt_labor, ttr=mt_ttr)
-machine = Machine(name=name, compatible_jobs=compatible_jobs, maintenance_task=mt_task, epoch_length=epoch_length)
+mt_task2 = MaintenanceTask(eta=300.0, beta=beta, age=1000.0, fixed_cost=mt_fixed_cost, 
+							RF=mt_RF, labor_req=mt_labor, ttr=mt_ttr)
+machine1 = Machine(name=name, compatible_jobs=compatible_jobs, maintenance_task=mt_task1, epoch_length=epoch_length)
+machine2 = Machine(name='Lathe', compatible_jobs=compatible_jobs, maintenance_task=mt_task2, epoch_length=epoch_length)
 
-policy = Policy('SJF', pm_plan)
-
-env = IndustrySim(machines=[machine], epoch_length=epoch_length, max_labor=max_labor,
+env = IndustrySim(machines=[machine1], epoch_length=epoch_length, max_labor=max_labor,
 					wages=wages, job_demand=job_demand, delay_penalty=delay_penalty)
+start = time.time()
+env.reset()
+res = EpochResult(None, None, None)
 
-#begin simulation
-for i in range(max_epochs):
-	epoch_result = env.run_epoch(policy=policy)
-	print(str(epoch_result))
-	print('')
+experiments = 1000
+start = time.time()
+validation = 100
+avg_obj = 0
+for exp in range(experiments):
+	pp = PeriodicPolicy(epoch_interval=5, pm_plan={'FnC1':'LOW'})
+	for i in range(max_epochs):
+		epoch_result = env.run_epoch(pp.get_policy())
+	res = env.get_result()
+	print(res)
+	avg_obj += res.objfun
+	env.reset()
+avg_obj/=validation
+print('Avg obj: '+ str(avg_obj))
+print('Took '+str(time.time()-start)+'s')

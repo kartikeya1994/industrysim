@@ -102,4 +102,5 @@ class NN: #TODO update softmax layer
 				decrease *= discount
 				rewards[i] = ret
 		return actions* rewards[:, np.newaxis]
+
 	

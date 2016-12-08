@@ -195,7 +195,7 @@ class Machine:
 	def front_job_subtype(self):
 		return self.job_queue.jobs[0].job_subtype
 	def front_job_type(self):
-		if self.job_queue.length == 0:
+		if len(self.job_queue.jobs) == 0:
 			return None
 		return self.job_queue.jobs[0].job_type
 	def front_start_time(self):
@@ -229,6 +229,7 @@ class Machine:
 				labor_release = self.labor_req()
 				self.maintenance_task.mt_complete(self.front_job_subtype())
 			#delete the completed job
+			#log('Deleting job: '+self.front_job_type())
 			self.job_queue.jobs.pop(0)
 			if len(self.job_queue)==0:
 				self.set_status('IDLE')
@@ -400,6 +401,20 @@ class Policy:
 		self.pm_plan = pm_plan
 		# dict with key as machine name on which to perform PM on
 		# and value HIGH', or 'LOW' indicating the type of PM
+
+class PeriodicPolicy:
+	def __init__(self, epoch_interval, pm_plan, sched_policy='SJF'):
+		self.epoch_interval = epoch_interval
+		self.pm_plan = pm_plan
+		self.curr_epoch = 0
+		self.sched_policy = sched_policy
+	def get_policy(self):
+		if self.curr_epoch%self.epoch_interval == 0:
+			self.curr_epoch += 1
+			return Policy(self.sched_policy, self.pm_plan)
+		else:
+			self.curr_epoch += 1
+			return Policy(self.sched_policy, {})
 
 class MachineResult:
 	def __init__(self, name, age, time_spent, mt_cost, delay_cost, jobs_done, jobs_pending, mt_jobs_done):
