@@ -129,7 +129,7 @@ class Machine:
 
 		age, mt_cost, mt_jobs_done = self.maintenance_task.init_next_epoch()
 
-		epoch_result = MachineResult(self.name, age, self.time_spent, mt_cost, self.delay_cost, self.jobs_done, mt_jobs_done)
+		epoch_result = MachineResult(self.name, age, self.time_spent, mt_cost, self.delay_cost, self.jobs_done, self.pending_jobs, mt_jobs_done)
 		self.init_vars()
 		self.curr_epoch += 1
 		return epoch_result
@@ -160,7 +160,7 @@ class Machine:
 
 	def get_totals(self):
 		age, total_mt_jobs_done, total_mt_cost = self.maintenance_task.get_totals()
-		machine_result = MachineResult(self.name, age, self.total_time_spent, total_mt_cost, self.total_delay_cost, self.total_jobs_done, total_mt_jobs_done)
+		machine_result = MachineResult(self.name, age, self.total_time_spent, total_mt_cost, self.total_delay_cost, self.total_jobs_done, self.pending_jobs, total_mt_jobs_done)
 		return machine_result
 	
 	def add_job(self, j, after=0):
@@ -170,6 +170,7 @@ class Machine:
 			self.job_queue.append(j)
 		elif j=='HIGH' or j=='LOW':
 			pm_job = self.maintenance_task.get_pm(j)
+			self.maintenance_task.pm_scheduled = True
 			self.job_queue.append(pm_job)
 		else:
 			raise Exception('Job type is incorrect')
@@ -194,6 +195,8 @@ class Machine:
 	def front_job_subtype(self):
 		return self.job_queue.jobs[0].job_subtype
 	def front_job_type(self):
+		if self.job_queue.length == 0:
+			return None
 		return self.job_queue.jobs[0].job_type
 	def front_start_time(self):
 		return self.job_queue.jobs[0].start_time
@@ -237,6 +240,8 @@ class Machine:
 			prev_end_time += self.job_queue.jobs[i].proc_time
 	def get_leftover_jobs(self):
 		leftover = []
+		total_due_after = 0.0
+		self.pending_jobs = 0
 		#store unfinished jobs as they must be rescheduled
 		unfinished_maintenance_job = None
 		first = True
@@ -248,11 +253,13 @@ class Machine:
 			elif j.job_type == 'JOB':
 				j.due_after -= self.epoch_length # since next epoch starts from zero
 				leftover.append(j)
+				total_due_after += j.due_after
+				self.pending_jobs += 1
 			first = False
 		self.job_queue = JobQueue()
 		if unfinished_maintenance_job is not None:
 			self.job_queue.append(unfinished_maintenance_job)
-		return leftover
+		return leftover, self.pending_jobs, total_due_after
 	def front_started(self):
 		return self.job_queue.jobs[0].started
 
@@ -395,18 +402,33 @@ class Policy:
 		# and value HIGH', or 'LOW' indicating the type of PM
 
 class MachineResult:
-	def __init__(self, name, age, time_spent, mt_cost, delay_cost, jobs_done, mt_jobs_done):
+	def __init__(self, name, age, time_spent, mt_cost, delay_cost, jobs_done, jobs_pending, mt_jobs_done):
 		self.name = name
 		self.age = age
-		self.time_spent = time_spent
-		self.mt_cost = mt_cost
+		# self.time_spent = dict(time_spent)
+		# self.mt_cost = dict(mt_cost)
+		# self.delay_cost = delay_cost
+		# self.jobs_done = jobs_done
+		# self.mt_jobs_done = dict(mt_jobs_done)
+		self.time_spent = (time_spent)
+		self.mt_cost = (mt_cost)
 		self.delay_cost = delay_cost
 		self.jobs_done = jobs_done
-		self.mt_jobs_done = mt_jobs_done
+		self.jobs_pending = jobs_pending
+		self.mt_jobs_done = (mt_jobs_done)
 		self.objfun = mt_cost['low'] + mt_cost['high'] + mt_cost['cm'] + delay_cost
+	def __add__(self, other):
+		for key in self.time_spent.keys():
+			self.time_spent[key] += other.time_spent[key]
+		for key in self.mt_cost.keys():
+			self.mt_cost[key] += other.mt_cost[key]
+		self.delay_cost += other.delay_cost
+		self.jobs_done += other.jobs_done
+		self.objfun += other.objfun
+		return self
 	@staticmethod
 	def get_table_headings():
-		return ['Machine', 'Age', 'ObjFun', 'Time W|D|I', 'DelayCost',  'PMHigh', 'PMLow', 'CMCost', 'JobsDone']
+		return ['Machine', 'Age', 'ObjFun', 'Time W|D|I', 'DelayCost',  'PMHigh', 'PMLow', 'CMCost', 'JobsDone', 'JobsPend']
 	def get_table_row(self):
 		s = [self.name, str(self.age)]
 		s.append(str(self.objfun))
@@ -416,16 +438,18 @@ class MachineResult:
 		s.append(str(self.mt_cost['low'])+'('+str(self.mt_jobs_done['low'])+')')
 		s.append(str(self.mt_cost['cm'])+'('+str(self.mt_jobs_done['cm'])+')')
 		s.append(str(self.jobs_done))
+		s.append(str(self.jobs_pending))
 		return s
 
 class EpochResult:
-	def __init__(self, epoch_num, machine_results, labor_cost):
+	def __init__(self, epoch_num=None, machine_results=None, labor_cost=None):
 		self.epoch_num = epoch_num
 		self.machine_results = machine_results
 		self.labor_cost = labor_cost
 		self.objfun = labor_cost
-		for m in machine_results:
-			self.objfun += m.objfun
+		if machine_results is not None:
+			for m in machine_results:
+				self.objfun += m.objfun
 
 	def __str__(self):
 		data = [MachineResult.get_table_headings()]
@@ -435,3 +459,18 @@ class EpochResult:
 		
 	def __getitem__(self, i):
 		return self.machine_results[i]
+
+	def __add__(self, other):
+		if self.machine_results is None:
+			return other
+		for i in range(len(self.machine_results)):
+			self.machine_results[i] += other.machine_results[i]
+		self.objfun += other.objfun
+		self.labor_cost += other.labor_cost
+		return self
+	def get_objfun(self):
+		return self.objfun
+
+
+
+

@@ -2,41 +2,58 @@ from tools import log, normal
 import operator
 import heapq
 from entities import EpochResult, Job
+import numpy as np
 class IndustrySim:
-	def __init__(self, machines=None, epoch_length=None, max_labor=None,
-					wages=None, job_demand=None, delay_penalty=None, policy=None):
+	def __init__(self, machines, epoch_length, max_labor,
+					wages, job_demand, delay_penalty, state_size):
 		self.machines = machines
 		self.epoch_length = epoch_length
 		self.max_labor = max_labor
 		self.wages = wages
 		self.job_demand = job_demand
 		self.delay_penalty = delay_penalty
-		self.policy = policy
+		self.state_size = state_size
 
 		self.epoch = 0
 		self.curr_labor = list(self.max_labor)
 
 		self.time=0
 
+		self.eval_next_epoch_job_demand()
+
 	def reset(self):
 		self.epoch = 0
 		self.curr_labor = list(self.max_labor)
+		self.new_jobs = []
+		self.pending_jobs = []
 
 		for m in self.machines:
 			m.init_totals()
 			m.init_vars()
 
 	def init_next_epoch(self):
-		self.time = 0
-		self.epoch += 1
+		# get simulator variables ready for next epoch
+		self.eval_next_epoch_job_demand()
+		state = np.zeros(self.state_size)
 		machine_results = []
+		i = 0
 		for m in self.machines:
 			result = m.init_next_epoch()
 			machine_results.append(result)
+			state[i] = result.jobs_pending
+			state[i+1] = result.age
+			i+=2
+		state[i], state[i+1], state[i+2] = self.curr_labor[0], self.curr_labor[1], self.curr_labor[2]
+		state[i+3] = self.avg_due_after
 		labor_cost = 0
 		for i in range(len(self.wages)):
 			labor_cost += self.wages[i]*self.max_labor[i]
-		return EpochResult(self.epoch, machine_results, labor_cost)
+
+		self.time = 0
+		self.epoch += 1
+
+		er = EpochResult(self.epoch, machine_results, labor_cost)
+		return er, state
 
 	def get_result(self):
 		machine_results = []
@@ -48,16 +65,31 @@ class IndustrySim:
 			labor_cost += self.wages[i]*self.max_labor[i]
 		return EpochResult(self.epoch, machine_results, labor_cost)
 
-	def get_new_jobs(self):
-		new_jobs = []
+	def eval_next_epoch_job_demand(self):
+		#evaluate jobs to schedule for next epoch
+		self.avg_due_after = 0.0
+		self.new_jobs_count = 0
+		#add pending jobs from previous epoch
+		self.pending_jobs = []
+		self.pending_job_counts = [0]*len(self.machines)
+		for i in range(len(self.machines)):
+			jobs, count, total_due_after = self.machines[i].get_leftover_jobs()
+			self.pending_job_counts[i] = count
+			self.pending_jobs += jobs
+			self.avg_due_after += total_due_after
+			self.new_jobs_count += count
+
+		self.new_jobs = self.pending_jobs
 		total_length = 0
 		for i in range(self.job_demand['num']):
 			j = Job('JOB', normal(self.job_demand['mu'],self.job_demand['sigma']), due_after=normal(self.job_demand['due_after']['mu'],self.job_demand['due_after']['sigma']), job_subtype='A')
-			new_jobs.append(j)
+			self.new_jobs.append(j)
+			self.avg_due_after += j.due_after
+			self.new_jobs_count += 1
 			total_length += j.proc_time
 			if total_length > len(self.machines)*self.epoch_length:
 				break
-		return new_jobs
+		self.avg_due_after/=self.new_jobs_count
 
 	def release_labor(self, labor):
 		for i in range(len(self.curr_labor)):
@@ -93,11 +125,7 @@ class IndustrySim:
 
 	def plan_epoch(self):
 		# schedule jobs and PM onto machines for one epoch
-		new_jobs = self.get_new_jobs() #TODO: job subtypes
-
-		#add pending jobs from previous epoch
-		for m in self.machines:
-			new_jobs += m.get_leftover_jobs()
+		new_jobs = self.new_jobs
 
 		#sort jobs depending upon policy
 		if self.policy.job_sched == 'SJF':
@@ -130,7 +158,7 @@ class IndustrySim:
 		end_of_last_pm = 0
 		perform_pm = self.policy.pm_plan.keys()
 		for m in self.machines:
-			if m.name in perform_pm:
+			if not m.maintenance_task.pm_scheduled and m.front_job_type()!='CM' and m.name in perform_pm:
 				if end_of_last_pm < self.epoch_length:
 					end_of_last_pm = m.add_job(self.policy.pm_plan[m.name], after=end_of_last_pm)
 					m.maintenance_task.pm_scheduled = True

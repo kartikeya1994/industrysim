@@ -11,7 +11,7 @@ num_machines = 1
 job_demand = {
 	'mu':8.0,
 	'sigma':2.0,
-	'num':int(num_machines*epoch_length/15), 
+	'num':int(num_machines*epoch_length/9), 
 	'due_after': {
 		'mu':160.0,
 		'sigma':100.0
