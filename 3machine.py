@@ -114,7 +114,7 @@ start = time.time()
 env.reset()
 res = EpochResult(None, None, None)
 
-nn = NN(dim_input=state_size, dim_hidden_layers=[5,4], dim_output=action_size)
+nn = NN(dim_input=state_size, dim_hidden_layers=[10,10,10,10], dim_output=action_size)
 
 states = np.zeros((max_epochs, state_size))
 actions = np.zeros((max_epochs, action_size))
@@ -123,7 +123,7 @@ state = np.zeros(state_size)
 
 # hyper params
 e = 0.1
-training_passes = 1000
+training_passes = 2000
 start = time.time()
 for exp in range(training_passes):
 	print('Experiment: {}'.format(exp))
@@ -139,24 +139,39 @@ for exp in range(training_passes):
 		returns = nn.get_returns(rewards, actions)
 		nn.backprop(states, returns)
 	res = env.get_result()
-	print(res)
+	#print(res)
 	env.reset()
 print('Training took '+str(time.time()-start)+'s')
 
-validation = 300
+validation = 200
 avg_obj = 0
+high_jobs = {
+	'FnC1':0,
+	'Lathe':0,
+	'Milling':0
+}
+low_jobs = {
+	'FnC1':0,
+	'Lathe':0,
+	'Milling':0
+}
 for exp in range(validation):
 	for i in range(max_epochs):
 		pm_probs = nn.run_forward(state)
-		pm_plan, action_vector = e_greedy(machine_names, pm_probs, e=0)
+		pm_plan, action_vector = e_greedy(machine_names, pm_probs,e=None)
 		#print(pm_plan)
 		states[i] = state
 		actions[i] = action_vector
 		epoch_result, state = env.run_epoch(Policy('SJF', pm_plan))
 	res = env.get_result()
-	#print(res)
+	print(res)
 	avg_obj += res.objfun
+	for mr in res.machine_results:
+		high_jobs[mr.name] += mr.mt_jobs_done['high']
+		low_jobs[mr.name] += mr.mt_jobs_done['low']
 	env.reset()
 avg_obj/=validation
 print('Avg obj: '+ str(avg_obj))
+print('Total high: '+str(high_jobs))
+print('Total low: '+ str(low_jobs))
 print('Took '+str(time.time()-start)+'s')

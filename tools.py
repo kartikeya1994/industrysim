@@ -45,32 +45,36 @@ class NN: #TODO update softmax layer
 		# dim_hidden_layers in a list with ith element being no. of nodes in hidden layer i
 		self.W = []
 		self.B = []
+		self.L2 = 0.0
 		self.layers = []
 		self.X = T.dmatrix()
 		self.Y = T.dmatrix() # reward times action vector
+		self.num_machines = dim_output/3
 		for i in range(len(dim_hidden_layers)+1):
 			w = None
+			b= None
 			lyr = None
 			if i==0:
 				w = theano.shared(np.array(np.random.rand(dim_input,dim_hidden_layers[0]), dtype=theano.config.floatX))
-				b = theano.shared(np.zeros((dim_hidden_layers[0],), dtype=theano.config.floatX))
+				b = theano.shared(np.array(np.random.rand(dim_hidden_layers[0]), dtype=theano.config.floatX))
 				lyr = self.layer(self.X, w, b)
 			elif i==len(dim_hidden_layers):
 				w = theano.shared(np.array(np.random.rand(dim_hidden_layers[i-1],dim_output), dtype=theano.config.floatX))
-				b = theano.shared(np.zeros((dim_output,), dtype=theano.config.floatX))
+				b = theano.shared(np.array(np.random.rand(dim_output), dtype=theano.config.floatX))
 				lyr = self.softmax_layer(self.layers[i-1], w, b) # output layer
 
 			else:
 				w = theano.shared(np.array(np.random.rand(dim_hidden_layers[i-1],dim_hidden_layers[i]), dtype=theano.config.floatX))
-				b = theano.shared(np.zeros((dim_hidden_layers[i],), dtype=theano.config.floatX))
+				b = theano.shared(np.array(np.random.rand(dim_hidden_layers[i]), dtype=theano.config.floatX))
 				lyr = self.layer(self.layers[i-1],w,b)
 			self.W.append(w)
 			self.B.append(b)
+			self.L2 += (w**2).sum() + (b**2).sum()
 			self.layers.append(lyr)
 		#cost equation
-		#loss = T.sum(T.log(T.dot(self.layers[-1],-self.Y.T)))#+ L1_reg*L1 + L2_reg*L2
-		#loss = self.layers[-1] - self.Y
-		loss = T.sum(T.square(self.layers[-1]-self.Y))#+ L1_reg*L1 + L2_reg*L2
+		#loss = T.sum(T.log(T.dot(self.layers[-1], self.Y.T)))#+ L1_reg*L1 + L2_reg*L2
+		#loss = T.sum(self.layers[-1] - self.Y) + 0.0001*self.L2
+		loss = T.sum(T.square(self.layers[-1]-self.Y)) #+ self.L2*0.00001
 		
 		updates = Adam(loss, self.W+self.B) #+ Adam(loss, self.B)
 		
@@ -80,12 +84,16 @@ class NN: #TODO update softmax layer
 
 	def layer(self, x, w, b):
 		m = T.dot(x,w) + b
-		h = nnet.sigmoid(m)
+		h = nnet.relu(m)
 		return h
 
 	def softmax_layer(self, x, w, b):
 		# last layer is softmax layer since it represents probabilities of actions to pick, and should sum to 1
-		return T.nnet.softmax(self.layer(x,w,b))#.reshape((2,))
+		o = self.layer(x,w,b)#.reshape((2,))
+		for i in range(0,self.num_machines,3):
+			T.set_subtensor(o[i:i+3], T.nnet.softmax(o[i:i+3]))
+		return o
+
 
 	def run_forward(self, state):
 		return self.run_forward_batch([state])[0]

@@ -405,17 +405,30 @@ class Policy:
 		# and value HIGH', or 'LOW' indicating the type of PM
 
 class PeriodicPolicy:
-	def __init__(self, epoch_interval, pm_plan, sched_policy='SJF'):
+	def __init__(self, machine_names, epoch_interval, pm_type='HIGH', sched_policy='SJF'):
+		self.machine_names = machine_names
+		self.num_machines =len(machine_names)
 		self.epoch_interval = epoch_interval
-		self.pm_plan = pm_plan
-		self.curr_epoch = 0
+		self.pm_type = pm_type
+		self.curr_epoch = -1
 		self.sched_policy = sched_policy
+		self.its_time = False
+		self.machine_turn = 0
 	def get_policy(self):
-		if self.curr_epoch%self.epoch_interval == 0:
+		if self.its_time: #if its that time of the planning horizon
+			# schedule PM on one machine every epoch, until all machines are done
+			pol = Policy(self.sched_policy, {self.machine_names[self.machine_turn]:self.pm_type})
+			self.machine_turn += 1
+			if self.machine_turn == self.num_machines:
+				self.machine_turn = 0
+				self.its_time = False
 			self.curr_epoch += 1
-			return Policy(self.sched_policy, self.pm_plan)
+			return pol
+		elif self.curr_epoch%self.epoch_interval == 0:
+			self.its_time = True
+			return self.get_policy()
 		else:
-			self.curr_epoch += 1
+			self.curr_epoch += 1 	
 			return Policy(self.sched_policy, {})
 
 class MachineResult:

@@ -75,14 +75,29 @@ res = EpochResult(None, None, None)
 experiments = 300
 start = time.time()
 avg_obj = 0
+high_jobs = {
+	'FnC1':0,
+	'Lathe':0,
+	'Milling':0
+}
+low_jobs = {
+	'FnC1':0,
+	'Lathe':0,
+	'Milling':0
+}
 for exp in range(experiments):
-	pp = PeriodicPolicy(epoch_interval=5, pm_plan={'FnC1':'HIGH', 'Lathe':'HIGH', 'Milling':'HIGH'})
+	pp = PeriodicPolicy(machine_names=machine_names, epoch_interval=5)
 	for i in range(max_epochs):
 		epoch_result = env.run_epoch(pp.get_policy())
 	res = env.get_result()
-	#print(res)
+	print(res)
 	avg_obj += res.objfun
+	for mr in res.machine_results:
+		high_jobs[mr.name] += mr.mt_jobs_done['high']
+		low_jobs[mr.name] += mr.mt_jobs_done['low']
 	env.reset()
 avg_obj/=experiments
 print('Avg obj: '+ str(avg_obj))
+print('Total high: '+str(high_jobs))
+print('Total low: '+ str(low_jobs))
 print('Took '+str(time.time()-start)+'s')
