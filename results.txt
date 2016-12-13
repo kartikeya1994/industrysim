@@ -1,0 +1,29 @@
+LOW PM
+(keras) kartikeya ~/keras/industrysim(>_<) python periodic_maintenance.py 
+Avg obj: 30404.385
+Took 9.74061393738s
+(keras) kartikeya ~/keras/industrysim(>_<) python periodic_maintenance.py 
+Avg obj: 30381.83
+Took 10.4329841137s
+
+
+(keras) kartikeya ~/keras/industrysim(>_<) python run.py 
+Took 18.1255970001s
+Avg obj: 41552.15
+Took 19.4127831459s
+
+HIGH PM 70 TTR
+(keras) kartikeya ~/keras/industrysim(>_<) python periodic_maintenance.py 
+Avg obj: 29435.325
+Took 9.94504117966s
+(keras) kartikeya ~/keras/industrysim(>_<) python periodic_maintenance.py 
+Avg obj: 30156.185
+Took 9.7887070179s
+
+HIGH PM 40 TTR
+(keras) kartikeya ~/keras/industrysim(>_<) python periodic_maintenance.py 
+Avg obj: 27502.065
+Took 9.45393896103s
+(keras) kartikeya ~/keras/industrysim(>_<) python periodic_maintenance.py 
+Avg obj: 27067.59
+Took 9.370002985s

@@ -35,7 +35,7 @@ mt_ttr = {
 		'sigma':5
 		},
 	'high': {
-		'mu':70,
+		'mu':30,
 		'sigma':5
 		},
 	'low':{
@@ -74,16 +74,15 @@ res = EpochResult(None, None, None)
 
 experiments = 1000
 start = time.time()
-validation = 100
 avg_obj = 0
 for exp in range(experiments):
-	pp = PeriodicPolicy(epoch_interval=5, pm_plan={'FnC1':'LOW'})
+	pp = PeriodicPolicy(epoch_interval=5, pm_plan={'FnC1':'HIGH'})
 	for i in range(max_epochs):
 		epoch_result = env.run_epoch(pp.get_policy())
 	res = env.get_result()
-	print(res)
+	#print(res)
 	avg_obj += res.objfun
 	env.reset()
-avg_obj/=validation
+avg_obj/=experiments
 print('Avg obj: '+ str(avg_obj))
 print('Took '+str(time.time()-start)+'s')

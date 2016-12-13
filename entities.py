@@ -27,7 +27,7 @@ class MaintenanceTask:
 		self.total_mt_cost['low'] += self.mt_cost['low']
 		self.total_mt_cost['cm'] += self.mt_cost['cm']
 
-		a,b,c = self.age, self.mt_cost, self.mt_jobs_done
+		a,b,c = self.age, dict(self.mt_cost), dict(self.mt_jobs_done)
 		self.init_vars()
 		return a,b,c
 
@@ -60,7 +60,7 @@ class MaintenanceTask:
 		self.pm_scheduled = False
 
 	def get_totals(self):
-		return self.age, self.mt_jobs_done, self.total_mt_cost
+		return self.age, self.mt_jobs_done, self.total_mt_cost, self.total_mt_jobs_done
 
 	def get_labor(self, job_subtype=None):
 		return self.labor_req[self.get_type_string(job_subtype)]
@@ -108,7 +108,6 @@ class Machine:
 		self.compatible_jobs = compatible_jobs
 		self.maintenance_task = maintenance_task
 		self.epoch_length = epoch_length
-		self.job_queue = JobQueue()
 
 		self.init_vars()
 		self.init_totals()
@@ -155,11 +154,12 @@ class Machine:
 		self.curr_epoch = 0
 		self.waiting = False
 		self.status = 'IDLE'
+		self.job_queue = JobQueue()
 
 		self.maintenance_task.init_totals()
 
 	def get_totals(self):
-		age, total_mt_jobs_done, total_mt_cost = self.maintenance_task.get_totals()
+		age, total_mt_jobs_done, total_mt_cost, total_mt_jobs_done = self.maintenance_task.get_totals()
 		machine_result = MachineResult(self.name, age, self.total_time_spent, total_mt_cost, self.total_delay_cost, self.total_jobs_done, self.pending_jobs, total_mt_jobs_done)
 		return machine_result
 	
@@ -168,10 +168,13 @@ class Machine:
 			if j.job_type == 'JOB' and j.job_subtype not in self.compatible_jobs:
 				raise Exception('Job type not compatible')
 			self.job_queue.append(j)
+		elif self.maintenance_task.pm_scheduled:
+			return after
 		elif j=='HIGH' or j=='LOW':
 			pm_job = self.maintenance_task.get_pm(j)
 			self.maintenance_task.pm_scheduled = True
-			self.job_queue.append(pm_job)
+			self.job_queue.append(pm_job, after=after)
+			return pm_job.start_time+pm_job.proc_time
 		else:
 			raise Exception('Job type is incorrect')
 
@@ -229,7 +232,6 @@ class Machine:
 				labor_release = self.labor_req()
 				self.maintenance_task.mt_complete(self.front_job_subtype())
 			#delete the completed job
-			#log('Deleting job: '+self.front_job_type())
 			self.job_queue.jobs.pop(0)
 			if len(self.job_queue)==0:
 				self.set_status('IDLE')
@@ -430,7 +432,7 @@ class MachineResult:
 		self.delay_cost = delay_cost
 		self.jobs_done = jobs_done
 		self.jobs_pending = jobs_pending
-		self.mt_jobs_done = (mt_jobs_done)
+		self.mt_jobs_done = mt_jobs_done
 		self.objfun = mt_cost['low'] + mt_cost['high'] + mt_cost['cm'] + delay_cost
 	def __add__(self, other):
 		for key in self.time_spent.keys():

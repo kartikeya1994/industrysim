@@ -1,24 +1,23 @@
-from random import random
+from random import random, normalvariate as n
 import theano
 import theano.tensor as T
 import theano.tensor.nnet as nnet
 import numpy as np
 from adam import Adam
 def weibull(eta, beta, age):
-	from random import random
 	import math
 	b = age**beta
-	a = (1/eta)**beta
+	a = (1.0/eta)**beta
+	#log("b={} a={}".format(b,a))
 	return int((b-math.log(1.0-random())/a)**(1.0/beta)-age)
 
 def normal(mu=None, sigma=None, params=None):
-	from random import normalvariate as n
 	if params is not None:
 		return int(n(params['mu'],params['sigma']))
 	return max(1,int(n(mu, sigma)))
 
 def log(msg):
-	print(msg)
+	#print(msg)
 	pass
 
 def e_greedy(machine_names, action_probs, e=None):
@@ -69,9 +68,9 @@ class NN: #TODO update softmax layer
 			self.B.append(b)
 			self.layers.append(lyr)
 		#cost equation
-		loss = T.sum(T.log(T.dot(self.layers[-1],-self.Y.T)))#+ L1_reg*L1 + L2_reg*L2
+		#loss = T.sum(T.log(T.dot(self.layers[-1],-self.Y.T)))#+ L1_reg*L1 + L2_reg*L2
 		#loss = self.layers[-1] - self.Y
-		#loss = T.sum(T.square(self.layers[-1]-self.Y))#+ L1_reg*L1 + L2_reg*L2
+		loss = T.sum(T.square(self.layers[-1]-self.Y))#+ L1_reg*L1 + L2_reg*L2
 		
 		updates = Adam(loss, self.W+self.B) #+ Adam(loss, self.B)
 		

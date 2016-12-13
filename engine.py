@@ -171,12 +171,15 @@ class IndustrySim:
 			m.evaluate_breakdowns()
 
 		for m in self.machines:
-			log('Age: '+str(m.maintenance_task.age)+', Schedule: '+str(m.job_queue))
-			log('Labour: '+str(self.curr_labor)+' PM sched: '+str(m.maintenance_task.pm_scheduled))
+			log(m.name+'| Age: '+str(m.maintenance_task.age)+', Schedule: '+str(m.job_queue)+' PM sched: '+str(m.maintenance_task.pm_scheduled))
+		log('Labour: '+str(self.curr_labor))
 
 	def simulate_epoch(self):
 		while self.time < self.epoch_length:
 			# check for events at each machine at this time instance
+			if self.curr_labor[0]<0 or self.curr_labor[1]<0 or self.curr_labor[2]<0:
+				print('Negative labor')
+				sys.exit()
 			for m in self.machines:
 				if len(m.job_queue) == 0 or m.front_start_time() > self.time:
 					# no more jobs, or job starts later
@@ -192,9 +195,11 @@ class IndustrySim:
 				else:
 					raise Exception('No if-elif block satisfied while evaluating front job')
 			self.time += 1
+		log("----After epoch")
 		for m in self.machines:
-			log('Afer epoch: Age: '+str(m.maintenance_task.age)+', Schedule: '+str(m.job_queue))
-			log('Labour: '+str(self.curr_labor)+' PM sched: '+str(m.maintenance_task.pm_scheduled))
+			log(m.name+'| Age: '+str(m.maintenance_task.age)+', Schedule: '+str(m.job_queue)+' PM sched: '+str(m.maintenance_task.pm_scheduled))
+		log('Labour: '+str(self.curr_labor))
+		log('**********************************')
 	def decrement_front_job(self, machine):
 		result = machine.decrement_front_job(self.time, self.delay_penalty)
 		if result is not None:
