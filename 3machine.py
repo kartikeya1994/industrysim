@@ -114,7 +114,7 @@ start = time.time()
 env.reset()
 res = EpochResult(None, None, None)
 
-nn = NN(dim_input=state_size, dim_hidden_layers=[10,10,10,10], dim_output=action_size)
+nn = NN(dim_input=state_size, dim_hidden_layers=[10,10,10,10], dim_output=action_size, do_dropout=True)
 
 states = np.zeros((max_epochs, state_size))
 actions = np.zeros((max_epochs, action_size))
@@ -157,7 +157,7 @@ low_jobs = {
 }
 for exp in range(validation):
 	for i in range(max_epochs):
-		pm_probs = nn.run_forward(state)
+		pm_probs = nn.run_forward(state, testing=True)
 		pm_plan, action_vector = e_greedy(machine_names, pm_probs,e=None)
 		#print(pm_plan)
 		states[i] = state

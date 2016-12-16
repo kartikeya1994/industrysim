@@ -41,12 +41,14 @@ def e_greedy(machine_names, action_probs, e=None):
 	return pm_plan, one_hot
 
 class NN: #TODO update softmax layer
-	def __init__(self, dim_input, dim_hidden_layers, dim_output):
+	def __init__(self, dim_input, dim_hidden_layers, dim_output, do_dropout=False):
 		# dim_hidden_layers in a list with ith element being no. of nodes in hidden layer i
 		self.W = []
 		self.B = []
 		self.L2 = 0.0
+		self.do_dropout = do_dropout
 		self.layers = []
+		self.testing = False
 		self.X = T.dmatrix()
 		self.Y = T.dmatrix() # reward times action vector
 		self.num_machines = dim_output/3
@@ -55,18 +57,21 @@ class NN: #TODO update softmax layer
 			b= None
 			lyr = None
 			if i==0:
+				#inputs to first hidden layer
 				w = theano.shared(np.array(np.random.rand(dim_input,dim_hidden_layers[0]), dtype=theano.config.floatX))
 				b = theano.shared(np.array(np.random.rand(dim_hidden_layers[0]), dtype=theano.config.floatX))
-				lyr = self.layer(self.X, w, b)
+				lyr = self.layer(self.X, w, b, dropout=do_dropout)
 			elif i==len(dim_hidden_layers):
+				#last hidden layer to output layer
 				w = theano.shared(np.array(np.random.rand(dim_hidden_layers[i-1],dim_output), dtype=theano.config.floatX))
 				b = theano.shared(np.array(np.random.rand(dim_output), dtype=theano.config.floatX))
 				lyr = self.softmax_layer(self.layers[i-1], w, b) # output layer
 
 			else:
+				#hidden layer to hidden layer
 				w = theano.shared(np.array(np.random.rand(dim_hidden_layers[i-1],dim_hidden_layers[i]), dtype=theano.config.floatX))
 				b = theano.shared(np.array(np.random.rand(dim_hidden_layers[i]), dtype=theano.config.floatX))
-				lyr = self.layer(self.layers[i-1],w,b)
+				lyr = self.layer(self.layers[i-1],w,b, dropout=do_dropout)
 			self.W.append(w)
 			self.B.append(b)
 			self.L2 += (w**2).sum() + (b**2).sum()
@@ -82,10 +87,13 @@ class NN: #TODO update softmax layer
 		self.backprop = theano.function(inputs=[self.X, self.Y], outputs=loss, updates=updates)
 		self.run_forward_batch = theano.function(inputs=[self.X], outputs=self.layers[-1])
 
-	def layer(self, x, w, b):
+	def layer(self, x, w, b, dropout=False):
 		m = T.dot(x,w) + b
 		h = nnet.relu(m)
-		return h
+		if dropout:
+			return self.dropout(h)
+		else:
+			return h
 
 	def softmax_layer(self, x, w, b):
 		# last layer is softmax layer since it represents probabilities of actions to pick, and should sum to 1
@@ -95,7 +103,24 @@ class NN: #TODO update softmax layer
 		return o
 
 
-	def run_forward(self, state):
+	def dropout(self, layer):
+		"""p is the probablity of dropping a unit
+		"""
+		p=0.5
+		if self.testing:
+			return layer*p
+		else:
+			rng = np.random.RandomState(99999)
+			srng = theano.tensor.shared_randomstreams.RandomStreams(rng.randint(999999))
+			# p=1-p because 1's indicate keep and p is prob of dropping
+			mask = srng.binomial(n=1, p=1-p, size=layer.shape)
+			# The cast is important because
+			# int * float32 = float64 which pulls things off the gpu
+			return layer * T.cast(mask, theano.config.floatX)
+
+
+	def run_forward(self, state, testing=False):
+		self.testing = testing
 		return self.run_forward_batch([state])[0]
 
 	def get_returns(self, rewards, actions, discount=0.97):
