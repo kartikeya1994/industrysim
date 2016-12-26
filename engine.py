@@ -49,8 +49,8 @@ class IndustrySim:
 			state[i] = result.jobs_pending
 			state[i+1] = result.age
 			i+=2
-		state[i], state[i+1], state[i+2] = self.curr_labor[0], self.curr_labor[1], self.curr_labor[2]
-		state[i+3] = self.avg_due_after
+		#state[i], state[i+1], state[i+2] = self.curr_labor[0], self.curr_labor[1], self.curr_labor[2]
+		#state[i+3] = self.avg_due_after
 		labor_cost = 0
 		for i in range(len(self.wages)):
 			labor_cost += self.wages[i]*self.max_labor[i]

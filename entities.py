@@ -214,6 +214,9 @@ class Machine:
 
 		self.job_queue.jobs[0].proc_time -= 1
 		self.job_queue.length -=1
+		if self.job_queue.length <0:
+			print(self.front_job_type())
+			print(self.job_queue)
 		if not self.job_queue.jobs[0].started:
 			self.job_queue.jobs[0].started = True
 			self.set_status(self.front_job_type())

@@ -27,3 +27,55 @@ Took 9.45393896103s
 (keras) kartikeya ~/keras/industrysim(>_<) python periodic_maintenance.py 
 Avg obj: 27067.59
 Took 9.370002985s
+
+600, 2, 0
+1800, 2, 1000
+5000, 2, 1000
+**************************
+Costs: 1000 400 200
+TTRs: 70 70 15
+Policy:
+Avg obj: 16746.5
+Total high: {'FnC1': 0, 'Lathe': 0, 'Milling': 0}
+Total low: {'FnC1': 4999, 'Lathe': 5000, 'Milling': 0}
+Took 128.81813097s
+Periodic:
+Avg obj: 44151.6666667
+Total high: {'FnC1': 1289, 'Lathe': 1457, 'Milling': 1488}
+Total low: {'FnC1': 0, 'Lathe': 0, 'Milling': 0}
+Took 10.0257260799s
+
+Comment: Policy schedules all PM low, nothing on milling
+**************************
+Costs: 1000 1000 200
+TTRs: 70 70 15
+Policy:
+Avg obj: 43502.5
+Total high: {'FnC1': 0, 'Lathe': 0, 'Milling': 0}
+Total low: {'FnC1': 0, 'Lathe': 0, 'Milling': 0}
+Took 96.3617470264s
+Periodic:
+Avg obj: 50771.5833333
+Total high: {'FnC1': 1299, 'Lathe': 1438, 'Milling': 1496}
+Total low: {'FnC1': 0, 'Lathe': 0, 'Milling': 0}
+Took 9.49222207069s
+Comment: Policy is wrong here, should schedule a few PM Highs or all PM lows
+***************************
+Costs: 100 400 200
+TTRs: 700 70 15
+Policy:
+Avg obj: 27323.375
+Total high: {'FnC1': 5000, 'Lathe': 0, 'Milling': 0}
+Total low: {'FnC1': 0, 'Lathe': 5000, 'Milling': 5000}
+Took 104.15932703s
+Periodic: 
+Avg obj: 2141357.58333
+Total high: {'FnC1': 656, 'Lathe': 1073, 'Milling': 1218}
+Total low: {'FnC1': 0, 'Lathe': 0, 'Milling': 0}
+Took 13.8033168316s
+Comment: 
+
+Why policy schedules a PM job in every epoch: 
+- The cost model is not tight. 
+
+

@@ -4,6 +4,8 @@ import theano.tensor as T
 import theano.tensor.nnet as nnet
 import numpy as np
 from adam import Adam
+from copy import deepcopy
+
 def weibull(eta, beta, age):
 	import math
 	b = age**beta
@@ -134,5 +136,24 @@ class NN: #TODO update softmax layer
 				decrease *= discount
 				rewards[i] = ret
 		return actions* rewards[:, np.newaxis]
+
+	def save(self, file_name='NN.pickle'):
+		from six.moves import cPickle
+		f = open(file_name, 'wb')
+		cPickle.dump(self, f, protocol=cPickle.HIGHEST_PROTOCOL)
+		f.close()
+
+	@staticmethod
+	def load(file_name='NN.pickle'):
+		f = open(file_name, 'rb')
+		NN = cPickle.load(f)
+		f.close()
+		return NN
+
+	@staticmethod
+	def clone(nn):
+		#deepcopy passed object and return copy
+		return deepcopy(nn)
+
 
 	
