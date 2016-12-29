@@ -38,13 +38,11 @@ reward = objfun, cost
 """
 state_size = num_machines*2#+4
 action_size = num_machines*3
-env = IndustrySim(machines=[machine1,machine2, machine3], epoch_length=epoch_length, max_labor=max_labor,
-					wages=wages, job_demand=job_demand, delay_penalty=delay_penalty, state_size=state_size)
 start = time.time()
-env.reset()
+
 res = EpochResult(None, None, None)
 
-nn = NN(dim_input=state_size, dim_hidden_layers=[10,10,10,10], dim_output=action_size, do_dropout=True)
+nn = NN(dim_input=state_size, dim_hidden_layers=[10,10,10,10], dim_output=action_size, do_dropout=True, filename='delay_var.pickle')
 
 states = np.zeros((max_epochs, state_size))
 actions = np.zeros((max_epochs, action_size))
@@ -53,32 +51,35 @@ state = np.zeros(state_size)
 
 # hyper params
 e = 0.2
-training_passes = 50000
+training_passes = 500
 start = time.time()
 
 #par = [NN.clone(env), NN.clone(env)]#, (NN.clone(env), pm_plan)]
-
-for exp in range(training_passes):
-	print('Training Pass: {}'.format(exp))
-	for i in range(max_epochs):
-		pm_probs = nn.run_forward(state)
-		pm_plan, action_vector = e_greedy(machine_names, pm_probs, e=e)
-		#print(pm_plan)
-		states[i] = state
-		actions[i] = action_vector
-		pol = Policy('SJF', pm_plan)
-		# for p in par:
-		# 	p.set(env)
-		# 	p.set_policy(pol)
-		#par_objfun = simulateParallel(par)
-		epoch_result, state = env.run_epoch(pol)#{}))#{'FnC1':'HIGH', 'Lathe':'HIGH'}))#pm_plan))
-		# print(epoch_result)
-		rewards[i] = (epoch_result.get_objfun())#+par_objfun)/2.0
-	returns = nn.get_returns(rewards, actions)
-	nn.backprop(states, returns)
-	res = env.get_result()
-	#print(res)
-	env.reset()
+for delay_penalty in range(1,100):
+	env = IndustrySim(machines=[machine1,machine2, machine3], epoch_length=epoch_length, max_labor=max_labor,
+					wages=wages, job_demand=job_demand, delay_penalty=delay_penalty, state_size=state_size)
+	print("Delay penalty: {}".format(delay_penalty))
+	for exp in range(training_passes):
+		print('Training Pass: {}'.format(exp))
+		for i in range(max_epochs):
+			pm_probs = nn.run_forward(state)
+			pm_plan, action_vector = e_greedy(machine_names, pm_probs, e=e)
+			#print(pm_plan)
+			states[i] = state
+			actions[i] = action_vector
+			pol = Policy('SJF', pm_plan)
+			# for p in par:
+			# 	p.set(env)
+			# 	p.set_policy(pol)
+			#par_objfun = simulateParallel(par)
+			epoch_result, state = env.run_epoch(pol)#{}))#{'FnC1':'HIGH', 'Lathe':'HIGH'}))#pm_plan))
+			# print(epoch_result)
+			rewards[i] = (epoch_result.get_objfun())#+par_objfun)/2.0
+		returns = nn.get_returns(rewards, actions)
+		nn.backprop(states, returns)
+		res = env.get_result()
+		#print(res)
+		env.reset()
 print('Training took '+str(time.time()-start)+'s')
 
 validation = 200
@@ -102,7 +103,7 @@ for exp in range(validation):
 		actions[i] = action_vector
 		epoch_result, state = env.run_epoch(Policy('SJF', pm_plan))
 	res = env.get_result()
-	print(res)
+	#print(res)
 	avg_obj += res.objfun
 	for mr in res.machine_results:
 		high_jobs[mr.name] += mr.mt_jobs_done['high']
@@ -113,4 +114,4 @@ print('Avg obj: '+ str(avg_obj))
 print('Total high: '+str(high_jobs))
 print('Total low: '+ str(low_jobs))
 print('Took '+str(time.time()-start)+'s')
-nn.save()
+nn.save(filename='delay_var.pickle')

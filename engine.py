@@ -4,6 +4,7 @@ import heapq
 from entities import EpochResult, Job
 import numpy as np
 import sys
+from copy import deepcopy
 class IndustrySim:
 	def __init__(self, machines, epoch_length, max_labor,
 					wages, job_demand, delay_penalty, state_size=None):
@@ -36,6 +37,9 @@ class IndustrySim:
 		for m in self.machines:
 			m.init_totals()
 			m.init_vars()
+
+	def set_policy(self, policy):
+		self.policy = policy
 
 	def init_next_epoch(self):
 		# get simulator variables ready for next epoch
@@ -206,3 +210,14 @@ class IndustrySim:
 			#result is not None if maintenance job is finished
 			#result contains labor req of job that is done
 			self.release_labor(result)
+
+	def set(self, env):
+		#set all variables of env to self
+		self.curr_labor[0] = env.curr_labor[0]
+		self.curr_labor[1] = env.curr_labor[1]
+		self.curr_labor[2] = env.curr_labor[2]
+
+		self.machines = deepcopy(env.machines)
+
+
+

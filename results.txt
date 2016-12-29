@@ -79,3 +79,53 @@ Why policy schedules a PM job in every epoch:
 - The cost model is not tight. 
 
 
+
+50000 iterations
+
+Avg obj: 22495.12
+Total high: {'FnC1': 2027, 'Lathe': 1218, 'Milling': 1393}
+Total low: {'FnC1': 1781, 'Lathe': 3199, 'Milling': 624}
+Took 1840.973001s
+
+Stored weights delay cost testing:
+(keras) kartikeya ~/keras/industrysim(>_<) python delay_cost_var.py 
+Delay penalty: 0
+Avg obj: 22340.0
+Total high: {'FnC1': 2024, 'Lathe': 1179, 'Milling': 1436}
+Total low: {'FnC1': 1795, 'Lathe': 3239, 'Milling': 658}
+Delay: 0.0 0hrs
+Delay penalty: 1
+Avg obj: 22385.175
+Total high: {'FnC1': 1951, 'Lathe': 1224, 'Milling': 1442}
+Total low: {'FnC1': 1799, 'Lathe': 3227, 'Milling': 598}
+Delay: 157.175 157.175hrs
+Delay penalty: 5
+Avg obj: 23038.1
+Total high: {'FnC1': 1967, 'Lathe': 1212, 'Milling': 1466}
+Total low: {'FnC1': 1786, 'Lathe': 3193, 'Milling': 613}
+Delay: 741.1 148.22hrs
+Delay penalty: 10
+Avg obj: 23881.65
+Total high: {'FnC1': 2070, 'Lathe': 1231, 'Milling': 1426}
+Total low: {'FnC1': 1738, 'Lathe': 3221, 'Milling': 638}
+Delay: 1470.65 147.065hrs
+Delay penalty: 25
+Avg obj: 26544.0
+Total high: {'FnC1': 2030, 'Lathe': 1239, 'Milling': 1482}
+Total low: {'FnC1': 1730, 'Lathe': 3221, 'Milling': 634}
+Delay: 3982.0 159.28hrs
+Delay penalty: 50
+Avg obj: 28972.25
+Total high: {'FnC1': 1948, 'Lathe': 1183, 'Milling': 1424}
+Total low: {'FnC1': 1824, 'Lathe': 3261, 'Milling': 649}
+Delay: 6783.25 135.665hrs
+Delay penalty: 100
+Avg obj: 43742.5
+Total high: {'FnC1': 1953, 'Lathe': 1253, 'Milling': 1410}
+Total low: {'FnC1': 1753, 'Lathe': 3157, 'Milling': 636}
+Delay: 21454.5 214.545hrs
+Took 48.4577171803s
+
+
+
+

@@ -5,6 +5,7 @@ import theano.tensor.nnet as nnet
 import numpy as np
 from adam import Adam
 from copy import deepcopy
+from six.moves import cPickle
 
 def weibull(eta, beta, age):
 	import math
@@ -43,8 +44,13 @@ def e_greedy(machine_names, action_probs, e=None):
 	return pm_plan, one_hot
 
 class NN: #TODO update softmax layer
-	def __init__(self, dim_input, dim_hidden_layers, dim_output, do_dropout=False):
+	def __init__(self, dim_input, dim_hidden_layers, dim_output, do_dropout=False, filename=None):
 		# dim_hidden_layers in a list with ith element being no. of nodes in hidden layer i
+		saved = None
+		if filename is not None:
+			f = open(filename, 'rb')
+			saved = cPickle.load(f)
+			f.close()
 		self.W = []
 		self.B = []
 		self.L2 = 0.0
@@ -58,21 +64,34 @@ class NN: #TODO update softmax layer
 			w = None
 			b= None
 			lyr = None
+			
 			if i==0:
 				#inputs to first hidden layer
-				w = theano.shared(np.array(np.random.rand(dim_input,dim_hidden_layers[0]), dtype=theano.config.floatX))
-				b = theano.shared(np.array(np.random.rand(dim_hidden_layers[0]), dtype=theano.config.floatX))
+				if filename is not None:
+					w = theano.shared(saved['W'][i])
+					b = theano.shared(saved['B'][i])
+				else:
+					w = theano.shared(np.array(np.random.rand(dim_input,dim_hidden_layers[0]), dtype=theano.config.floatX))
+					b = theano.shared(np.array(np.random.rand(dim_hidden_layers[0]), dtype=theano.config.floatX))
 				lyr = self.layer(self.X, w, b, dropout=do_dropout)
 			elif i==len(dim_hidden_layers):
 				#last hidden layer to output layer
-				w = theano.shared(np.array(np.random.rand(dim_hidden_layers[i-1],dim_output), dtype=theano.config.floatX))
-				b = theano.shared(np.array(np.random.rand(dim_output), dtype=theano.config.floatX))
+				if filename is not None:
+					w = theano.shared(saved['W'][i])
+					b = theano.shared(saved['B'][i])
+				else:
+					w = theano.shared(np.array(np.random.rand(dim_hidden_layers[i-1],dim_output), dtype=theano.config.floatX))
+					b = theano.shared(np.array(np.random.rand(dim_output), dtype=theano.config.floatX))
 				lyr = self.softmax_layer(self.layers[i-1], w, b) # output layer
 
 			else:
 				#hidden layer to hidden layer
-				w = theano.shared(np.array(np.random.rand(dim_hidden_layers[i-1],dim_hidden_layers[i]), dtype=theano.config.floatX))
-				b = theano.shared(np.array(np.random.rand(dim_hidden_layers[i]), dtype=theano.config.floatX))
+				if filename is not None:
+					w = theano.shared(saved['W'][i])
+					b = theano.shared(saved['B'][i])
+				else:
+					w = theano.shared(np.array(np.random.rand(dim_hidden_layers[i-1],dim_hidden_layers[i]), dtype=theano.config.floatX))
+					b = theano.shared(np.array(np.random.rand(dim_hidden_layers[i]), dtype=theano.config.floatX))
 				lyr = self.layer(self.layers[i-1],w,b, dropout=do_dropout)
 			self.W.append(w)
 			self.B.append(b)
@@ -81,7 +100,7 @@ class NN: #TODO update softmax layer
 		#cost equation
 		#loss = T.sum(T.log(T.dot(self.layers[-1], self.Y.T)))#+ L1_reg*L1 + L2_reg*L2
 		#loss = T.sum(self.layers[-1] - self.Y) + 0.0001*self.L2
-		loss = T.sum(T.square(self.layers[-1]-self.Y)) #+ self.L2*0.00001
+		loss = -T.sum(T.square(self.layers[-1]-self.Y)) #+ self.L2*0.00001
 		
 		updates = Adam(loss, self.W+self.B) #+ Adam(loss, self.B)
 		
@@ -137,23 +156,13 @@ class NN: #TODO update softmax layer
 				rewards[i] = ret
 		return actions* rewards[:, np.newaxis]
 
-	def save(self, file_name='NN.pickle'):
-		from six.moves import cPickle
-		f = open(file_name, 'wb')
-		cPickle.dump(self, f, protocol=cPickle.HIGHEST_PROTOCOL)
+	def save(self, filename='NN.pickle'):
+		f = open(filename, 'wb')
+		cPickle.dump({'W':[w.get_value() for w in self.W], 'B':[b.get_value() for b in self.B]}, f, protocol=cPickle.HIGHEST_PROTOCOL)
 		f.close()
-
-	@staticmethod
-	def load(file_name='NN.pickle'):
-		f = open(file_name, 'rb')
-		NN = cPickle.load(f)
-		f.close()
-		return NN
 
 	@staticmethod
 	def clone(nn):
 		#deepcopy passed object and return copy
 		return deepcopy(nn)
-
-
 	
