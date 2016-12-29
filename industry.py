@@ -8,6 +8,10 @@ max_epochs=25
 max_labor=[1,2,3]
 wages = [2500, 1000, 500] # per epoch
 num_machines = 3
+state_size = num_machines*2+3#+4
+action_size = num_machines*3
+nn_arch = [10,4,4,4,4,4,4,4,10]
+
 job_demand = {
 	'mu':8.0,
 	'sigma':2.0,

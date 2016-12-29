@@ -7,6 +7,7 @@ from industry import epoch_length, max_epochs, max_labor, wages, num_machines, j
 from industry import delay_penalty, mt_fixed_cost, mt_RF, mt_ttr, mt_labor, beta, age
 from industry import compatible_jobs, machine_names, mt_task1, mt_task2, mt_task3
 from industry import machine1, machine2, machine3
+from industry import state_size, action_size, nn_arch
 
 from multiprocessing.dummy import Pool as ThreadPool
 
@@ -32,19 +33,18 @@ last epoch params:
 	free labour
 next epoch demand:
 	avg due after
+delay penalty
 
 reward = objfun, cost
 
 """
-state_size = num_machines*2#+4
-action_size = num_machines*3
 env = IndustrySim(machines=[machine1,machine2, machine3], epoch_length=epoch_length, max_labor=max_labor,
 					wages=wages, job_demand=job_demand, delay_penalty=delay_penalty, state_size=state_size)
 start = time.time()
 env.reset()
 res = EpochResult(None, None, None)
 
-nn = NN(dim_input=state_size, dim_hidden_layers=[10,10,10,10], dim_output=action_size, do_dropout=True)
+nn = NN(dim_input=state_size, dim_hidden_layers=nn_arch, dim_output=action_size, do_dropout=True)
 
 states = np.zeros((max_epochs, state_size))
 actions = np.zeros((max_epochs, action_size))
@@ -53,7 +53,7 @@ state = np.zeros(state_size)
 
 # hyper params
 e = 0.2
-training_passes = 50000
+training_passes = 10000
 start = time.time()
 
 #par = [NN.clone(env), NN.clone(env)]#, (NN.clone(env), pm_plan)]
@@ -113,4 +113,4 @@ print('Avg obj: '+ str(avg_obj))
 print('Total high: '+str(high_jobs))
 print('Total low: '+ str(low_jobs))
 print('Took '+str(time.time()-start)+'s')
-nn.save()
+nn.save(filename='NNfinal2.pickle')

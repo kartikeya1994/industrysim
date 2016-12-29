@@ -126,6 +126,177 @@ Total low: {'FnC1': 1753, 'Lathe': 3157, 'Milling': 636}
 Delay: 21454.5 214.545hrs
 Took 48.4577171803s
 
+delay var
+
+Training took 217.304898024s
+Delay penalty: 0
+Avg obj: 19542.0
+Total high: {'FnC1': 1339, 'Lathe': 122, 'Milling': 1158}
+Total low: {'FnC1': 1649, 'Lathe': 3908, 'Milling': 122}
+Delay: 0.0 0hrs
+Delay penalty: 1
+Avg obj: 20074.465
+Total high: {'FnC1': 1391, 'Lathe': 134, 'Milling': 1196}
+Total low: {'FnC1': 1648, 'Lathe': 3919, 'Milling': 108}
+Delay: 202.465 202.465hrs
+Delay penalty: 5
+Avg obj: 20304.775
+Total high: {'FnC1': 1426, 'Lathe': 142, 'Milling': 1189}
+Total low: {'FnC1': 1610, 'Lathe': 3884, 'Milling': 100}
+Delay: 736.775 147.355hrs
+Delay penalty: 10
+Avg obj: 21196.9
+Total high: {'FnC1': 1311, 'Lathe': 128, 'Milling': 1186}
+Total low: {'FnC1': 1562, 'Lathe': 3896, 'Milling': 100}
+Delay: 1518.9 151.89hrs
+Delay penalty: 25
+Avg obj: 25018.5
+Total high: {'FnC1': 1350, 'Lathe': 123, 'Milling': 1178}
+Total low: {'FnC1': 1584, 'Lathe': 3881, 'Milling': 112}
+Delay: 5274.5 210.98hrs
+Delay penalty: 50
+Avg obj: 28792.25
+Total high: {'FnC1': 1343, 'Lathe': 128, 'Milling': 1225}
+Total low: {'FnC1': 1543, 'Lathe': 3876, 'Milling': 80}
+Delay: 9136.25 182.725hrs
+Delay penalty: 100
+Avg obj: 40190.0
+Total high: {'FnC1': 1347, 'Lathe': 150, 'Milling': 1215}
+Total low: {'FnC1': 1631, 'Lathe': 3930, 'Milling': 104}
+Delay: 20566.0 205.66hrs
+Took 266.776870966s
+
+CM Var:
+
+Training took 2308.83013797s
+Delay penalty: 10
+Avg obj: 18959.95
+Total high: {'FnC1': 1232, 'Lathe': 111, 'Milling': 1212}
+Total low: {'FnC1': 1651, 'Lathe': 3832, 'Milling': 95}
+Delay: 2003.95 200.395hrs
+Delay penalty: 10
+Avg obj: 21812.9
+Total high: {'FnC1': 1327, 'Lathe': 135, 'Milling': 1173}
+Total low: {'FnC1': 1641, 'Lathe': 3861, 'Milling': 109}
+Delay: 2061.9 206.19hrs
+Delay penalty: 10
+Avg obj: 24736.5
+Total high: {'FnC1': 1314, 'Lathe': 157, 'Milling': 1200}
+Total low: {'FnC1': 1598, 'Lathe': 3935, 'Milling': 95}
+Delay: 1916.5 191.65hrs
+Delay penalty: 10
+Avg obj: 31894.2
+Total high: {'FnC1': 1334, 'Lathe': 132, 'Milling': 1226}
+Total low: {'FnC1': 1648, 'Lathe': 3887, 'Milling': 113}
+Delay: 1762.2 176.22hrs
+Delay penalty: 10
+Avg obj: 46345.5
+Total high: {'FnC1': 1349, 'Lathe': 132, 'Milling': 1229}
+Total low: {'FnC1': 1615, 'Lathe': 3895, 'Milling': 97}
+Delay: 1818.5 181.85hrs
+Took 2374.0085609s
+
+CM var: ** good decrease in delay
+
+Training took 74.0669379234s
+Delay penalty: 10
+Avg obj: 17710.2
+Total high: {'FnC1': 715, 'Lathe': 1011, 'Milling': 355}
+Total low: {'FnC1': 3217, 'Lathe': 1909, 'Milling': 512}
+Delay: 1724.2 172.42hrs
+Delay penalty: 10
+Avg obj: 18979.95
+Total high: {'FnC1': 681, 'Lathe': 941, 'Milling': 338}
+Total low: {'FnC1': 3276, 'Lathe': 1967, 'Milling': 530}
+Delay: 1366.95 136.695hrs
+Delay penalty: 10
+Avg obj: 20822.4
+Total high: {'FnC1': 646, 'Lathe': 923, 'Milling': 337}
+Total low: {'FnC1': 3275, 'Lathe': 1902, 'Milling': 535}
+Delay: 1378.4 137.84hrs
+Delay penalty: 10
+Avg obj: 26816.6
+Total high: {'FnC1': 731, 'Lathe': 964, 'Milling': 361}
+Total low: {'FnC1': 3196, 'Lathe': 1906, 'Milling': 544}
+Delay: 1483.6 148.36hrs
+Delay penalty: 10
+Avg obj: 34531.9
+Total high: {'FnC1': 696, 'Lathe': 964, 'Milling': 361}
+Total low: {'FnC1': 3273, 'Lathe': 1954, 'Milling': 515}
+Delay: 1147.9 114.79hrs
+Took 106.102628946s
+
+CM var:
+
+Avg obj: 17029.15
+Total high: {'FnC1': 716, 'Lathe': 1009, 'Milling': 357}
+Total low: {'FnC1': 3241, 'Lathe': 1908, 'Milling': 519}
+Total CM: {'FnC1': 168, 'Lathe': 78, 'Milling': 86}
+Delay: 1031.15 103.115hrs
+Delay penalty: 10
+Avg obj: 18627.3
+Total high: {'FnC1': 684, 'Lathe': 936, 'Milling': 335}
+Total low: {'FnC1': 3285, 'Lathe': 1961, 'Milling': 531}
+Total CM: {'FnC1': 184, 'Lathe': 95, 'Milling': 106}
+Delay: 1015.3 101.53hrs
+Delay penalty: 10
+Avg obj: 21201.4
+Total high: {'FnC1': 643, 'Lathe': 922, 'Milling': 340}
+Total low: {'FnC1': 3249, 'Lathe': 1903, 'Milling': 533}
+Total CM: {'FnC1': 207, 'Lathe': 103, 'Milling': 115}
+Delay: 1456.4 145.64hrs
+Delay penalty: 10
+Avg obj: 26298.55
+Total high: {'FnC1': 736, 'Lathe': 960, 'Milling': 363}
+Total low: {'FnC1': 3202, 'Lathe': 1899, 'Milling': 539}
+Total CM: {'FnC1': 169, 'Lathe': 81, 'Milling': 115}
+Delay: 1415.55 141.555hrs
+Delay penalty: 10
+Avg obj: 34303.45
+Total high: {'FnC1': 691, 'Lathe': 971, 'Milling': 362}
+Total low: {'FnC1': 3267, 'Lathe': 1952, 'Milling': 516}
+Total CM: {'FnC1': 163, 'Lathe': 80, 'Milling': 110}
+Delay: 870.45 87.045hrs
+Took 100.270385027s
+
+Delay var: 
+
+Delay penalty: 1
+Avg obj: 17742.345
+Total high: {'FnC1': 702, 'Lathe': 946, 'Milling': 361}
+Total low: {'FnC1': 3250, 'Lathe': 1964, 'Milling': 526}
+Delay: 154.345 154.345hrs
+Delay penalty: 5
+Avg obj: 18116.7
+Total high: {'FnC1': 673, 'Lathe': 890, 'Milling': 377}
+Total low: {'FnC1': 3240, 'Lathe': 1972, 'Milling': 511}
+Delay: 518.7 103.74hrs
+Delay penalty: 10
+Avg obj: 18804.4
+Total high: {'FnC1': 678, 'Lathe': 918, 'Milling': 328}
+Total low: {'FnC1': 3202, 'Lathe': 1937, 'Milling': 514}
+Delay: 1463.4 146.34hrs
+Delay penalty: 25
+Avg obj: 20466.375
+Total high: {'FnC1': 726, 'Lathe': 920, 'Milling': 354}
+Total low: {'FnC1': 3220, 'Lathe': 1971, 'Milling': 571}
+Delay: 2729.375 109.175hrs
+Delay penalty: 50
+Avg obj: 21498.75
+Total high: {'FnC1': 685, 'Lathe': 951, 'Milling': 349}
+Total low: {'FnC1': 3272, 'Lathe': 1901, 'Milling': 528}
+Delay: 4142.75 82.855hrs
+Delay penalty: 100
+Avg obj: 30162.0
+Total high: {'FnC1': 745, 'Lathe': 932, 'Milling': 347}
+Total low: {'FnC1': 3231, 'Lathe': 1972, 'Milling': 518}
+Delay: 12593.0 125.93hrs
+Took 440.795247078s
+
+
+
+
+
 
 
 
