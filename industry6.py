@@ -7,7 +7,7 @@ epoch_length = 168
 max_epochs=25
 max_labor=[1,2,3]
 wages = [2500, 1000, 500] # per epoch
-num_machines = 3
+num_machines = 6
 state_size = num_machines*2+3#+4
 action_size = num_machines*3
 nn_arch = [10,4,4,4,4,4,4,4,10]
@@ -55,9 +55,7 @@ mt_labor = {
 beta = 2.0
 age = 0.0
 compatible_jobs = {'A', 'B'}
-machine_names1 = ['FnC1']
-machine_names3 = ['FnC1', 'Lathe1', 'Milling1']
-machine_names6 = ['FnC1', 'Lathe1', 'Milling1', 'FnC2', 'Lathe2', 'Milling2']
+machine_names = ['FnC1', 'Lathe1', 'Milling1', 'FnC2', 'Lathe2', 'Milling2', ]
 
 mt_task1 = MaintenanceTask(eta=600.0, beta=beta, age=1000.0, fixed_cost=mt_fixed_cost, 
 							RF=mt_RF, labor_req=mt_labor, ttr=mt_ttr)

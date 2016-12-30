@@ -5,8 +5,8 @@ import numpy as np
 import time
 from industry import epoch_length, max_epochs, max_labor, wages, num_machines, job_demand
 from industry import delay_penalty, mt_fixed_cost, mt_RF, mt_ttr, mt_labor, beta, age
-from industry import compatible_jobs, machine_names3, mt_task1, mt_task2, mt_task3
-from industry import machine1, machine2, machine3
+from industry import compatible_jobs, machine_names, mt_task1, mt_task2, mt_task3
+from industry import machine1, machine2, machine3, machine5, machine4, machine6
 from industry import state_size, action_size, nn_arch
 
 from multiprocessing.dummy import Pool as ThreadPool
@@ -38,7 +38,7 @@ delay penalty
 reward = objfun, cost
 
 """
-env = IndustrySim(machines=[machine1,machine2, machine3], epoch_length=epoch_length, max_labor=max_labor,
+env = IndustrySim(machines=[machine1,machine2, machine3, machine4, machine5, machine6], epoch_length=epoch_length, max_labor=max_labor,
 					wages=wages, job_demand=job_demand, delay_penalty=delay_penalty, state_size=state_size)
 start = time.time()
 env.reset()
@@ -53,7 +53,7 @@ state = np.zeros(state_size)
 
 # hyper params
 e = 0.2
-training_passes = 10000
+training_passes = 20000
 start = time.time()
 
 #par = [NN.clone(env), NN.clone(env)]#, (NN.clone(env), pm_plan)]
@@ -62,7 +62,7 @@ for exp in range(training_passes):
 	print('Training Pass: {}'.format(exp))
 	for i in range(max_epochs):
 		pm_probs = nn.run_forward(state)
-		pm_plan, action_vector = e_greedy(machine_names3, pm_probs, e=e)
+		pm_plan, action_vector = e_greedy(machine_names, pm_probs, e=e)
 		#print(pm_plan)
 		states[i] = state
 		actions[i] = action_vector
@@ -83,20 +83,38 @@ print('Training took '+str(time.time()-start)+'s')
 
 validation = 200
 avg_obj = 0
+# high_jobs = {
+# 	'FnC1':0,
+# 	'Lathe':0,
+# 	'Milling':0
+# }
+# low_jobs = {
+# 	'FnC1':0,
+# 	'Lathe':0,
+# 	'Milling':0
+# }
+
 high_jobs = {
 	'FnC1':0,
 	'Lathe1':0,
-	'Milling1':0
+	'Milling1':0,
+	'FnC2':0,
+	'Lathe2':0,
+	'Milling2':0
 }
 low_jobs = {
 	'FnC1':0,
 	'Lathe1':0,
-	'Milling1':0
+	'Milling1':0,
+	'FnC2':0,
+	'Lathe2':0,
+	'Milling2':0
 }
+
 for exp in range(validation):
 	for i in range(max_epochs):
 		pm_probs = nn.run_forward(state, testing=True)
-		pm_plan, action_vector = e_greedy(machine_names3, pm_probs,e=None)
+		pm_plan, action_vector = e_greedy(machine_names, pm_probs,e=None)
 		#print(pm_plan)
 		states[i] = state
 		actions[i] = action_vector
